@@ -1,4 +1,4 @@
-### Add the repository
+### How to add SDK to your project
 
 #### Groovy (`settings.gradle`)
 ```groovy
