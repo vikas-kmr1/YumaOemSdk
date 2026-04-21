@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     id("maven-publish")
 }
 
@@ -54,6 +55,14 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.compose.material3)
 
+    // ─── Ktor Network Layer (No OkHttp — avoids dependency conflicts in host apps) ───
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)           // Native Android engine (HttpURLConnection)
+    implementation(libs.ktor.client.auth)              // Bearer token auto-refresh
+    implementation(libs.ktor.client.content.negotiation) // JSON content type handling
+    implementation(libs.ktor.client.logging)           // Network logging (debug only)
+    implementation(libs.ktor.serialization.kotlinx.json) // JSON parsing via Ktor
+    implementation(libs.kotlinx.serialization.json)   // Kotlinx JSON serialization
 }
 
 
