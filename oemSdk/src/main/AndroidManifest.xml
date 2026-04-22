@@ -1,4 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ── Permissions declared by the SDK ──────────────────────────────────────
+         Host apps that use the SDK will inherit these automatically via manifest merger.
+         The host app still MUST request location permissions at runtime before calling
+         YumaSdk.launchHome(). -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Location — required for map features and station discovery -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- Bluetooth — required for BLE battery swap features -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <application>
+
+        <!--
+            SdkMainActivity — the SDK's internal root Activity.
+            NOT exported: invisible to the host app's external callers.
+            Launched exclusively via YumaSdk.launchHome(context).
+        -->
+        <activity
+            android:name=".SdkMainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!--
+            Map API Key — injected at runtime from YumaSdkConfiguration.mapApiKey.
+            The placeholder value here will be replaced via manifestPlaceholders
+            in the consuming app's build.gradle. This prevents the key from being
+            hardcoded in the SDK's source.
+
+            Host app must add to their build.gradle:
+                manifestPlaceholders["YUMA_MAP_API_KEY"] = "<key from YumaSdk.getConfig().mapApiKey>"
+
+            Or the SDK can inject it programmatically via a MetaData helper on Activity start.
+        -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDgUJfdi2Ba9bh5FrzTIofMDCIFDcK02kM" />
+
+    </application>
+
 </manifest>

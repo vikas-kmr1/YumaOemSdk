@@ -47,6 +47,8 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -54,6 +56,22 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.material)
     implementation(libs.androidx.compose.material3)
+
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+
+    // DataStore — SDK-internal session preferences (no 3rd party DI)
+    implementation(libs.androidx.datastore.preferences)
+
+    // Maps & Location
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.location)
+
+    // Image loading
+    implementation(libs.coil.compose)
 
     // ─── Ktor Network Layer (No OkHttp — avoids dependency conflicts in host apps) ───
     implementation(libs.ktor.client.core)
@@ -63,6 +81,9 @@ dependencies {
     implementation(libs.ktor.client.logging)           // Network logging (debug only)
     implementation(libs.ktor.serialization.kotlinx.json) // JSON parsing via Ktor
     implementation(libs.kotlinx.serialization.json)   // Kotlinx JSON serialization
+
+    // Network inspection (Debug only)
+    debugImplementation(libs.inspektify.ktor3)
 }
 
 

@@ -19,6 +19,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["YUMA_MAP_API_KEY"] = "DUMMY_KEY"
     }
 
     buildTypes {
@@ -40,6 +41,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":oemSdk"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
