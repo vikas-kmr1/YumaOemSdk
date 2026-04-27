@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import com.segment.analytics.BuildConfig
 import com.yuma.oemsdk.navigation.SdkNavHost
 
 /**
@@ -45,6 +46,7 @@ internal class SdkMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        BuildConfig.DEBUG
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         enableEdgeToEdge(

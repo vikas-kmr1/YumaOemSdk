@@ -84,7 +84,8 @@ internal class SdkNetworkClient(
                     }
                 )
             }
-
+            // ── Network Inspection (Safety Abstracted) ──────────────────────────
+            SdkNetworkInspector.create().install(this)
             // ── Logging (disabled in release automatically) ───────────────────────
             if (enableLogging) {
                 install(Logging) {
@@ -96,6 +97,8 @@ internal class SdkNetworkClient(
                     level = LogLevel.BODY
                 }
             }
+
+
         }
     }
 

@@ -3,6 +3,7 @@ package com.yuma.oemsdk
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.yuma.oemsdk.YumaSdk.init
 import com.yuma.oemsdk.data.network.SdkHomeRemoteDataSource
 import com.yuma.oemsdk.location.SdkLocationManager
 import com.yuma.oemsdk.network.SdkNetworkClient
@@ -100,9 +101,9 @@ object YumaSdk {
             config = sdkConfig
 
             val baseUrl = when (sdkConfig.environment) {
-                Environment.DEV     -> "dev-backend-oem.yumax.app"
+                Environment.DEV -> "dev-backend-oem.yumax.app"
                 Environment.PREPROD -> "preprod-backend-oem.yumax.app"
-                Environment.PROD    -> "backend-oem.yumax.app"
+                Environment.PROD -> "backend-oem.yumax.app"
             }
             val enableLogging = sdkConfig.environment != Environment.PROD
 

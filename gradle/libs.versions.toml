@@ -7,7 +7,8 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 lifecycleViewmodel = "2.9.0"
 activityCompose = "1.13.0"
-kotlin = "2.0.21"
+kotlin = "2.1.20"
+kotlinxDatetime = "0.6.2"
 composeBom = "2026.03.00"
 appcompat = "1.7.1"
 material = "1.13.0"
@@ -19,8 +20,13 @@ datastore = "1.1.4"
 mapsCompose = "6.5.2"
 playServicesLocation = "21.3.0"
 coil = "2.7.0"
-
+qrKit = "3.0.6"
 inspektify = "1.0.0"
+moko = "0.19.1"
+lottie = "6.7.1"
+kermit = "2.0.4"
+firebaseBom = "33.13.0"
+desugar-jdk-libs = "2.1.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -41,6 +47,13 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
+
+touchlab-kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+
+
+
 # Navigation
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 # Coroutines
@@ -50,6 +63,9 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 # Maps & Location
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+
+qr-kit = { module = "network.chaintech:qr-kit", version.ref = "qrKit" }
+
 # Image loading
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
@@ -60,8 +76,23 @@ ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 inspektify_ktor3 = { module = "io.github.bvantur:inspektify-ktor3" , version.ref = "inspektify" }
+
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+kotlinx-datetime-v061 = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+
+## Coroutine
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+
+
+#moko
+moko-permissions = { module = "dev.icerock.moko:permissions-android", version.ref = "moko" }
+moko-permissions-compose = { module = "dev.icerock.moko:permissions-compose-android", version.ref = "moko" }
+permissions-bluetooth = { module = "dev.icerock.moko:permissions-bluetooth-android", version.ref = "moko" }
+permissions-location = { module = "dev.icerock.moko:permissions-location-android", version.ref = "moko" }
+permissions-notifications = { module = "dev.icerock.moko:permissions-notifications-android", version.ref = "moko" }
+
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk-libs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

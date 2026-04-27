@@ -20,9 +20,9 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
 
-
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -34,9 +34,16 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+
+    // Use Java Toolchain to ensure a valid JDK is used
+    kotlin {
+        jvmToolchain(17)
     }
 }
 
@@ -60,6 +67,9 @@ dependencies {
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
+    // QR Code Scanner and Generator
+    implementation(libs.qr.kit)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
@@ -80,7 +90,23 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation) // JSON content type handling
     implementation(libs.ktor.client.logging)           // Network logging (debug only)
     implementation(libs.ktor.serialization.kotlinx.json) // JSON parsing via Ktor
+
     implementation(libs.kotlinx.serialization.json)   // Kotlinx JSON serialization
+    implementation(libs.kotlinx.datetime.v061)   // Kotlinx JSON serialization
+
+    implementation(libs.coroutines.core)
+
+    implementation(libs.lottie.compose)
+    implementation(libs.touchlab.kermit)
+    implementation("com.segment.analytics.kotlin:android:1.16.3")
+
+    api(libs.moko.permissions)
+    api(libs.moko.permissions.compose)
+    api(libs.permissions.bluetooth)
+    api(libs.permissions.location)
+    api(libs.permissions.notifications)
+
+    implementation(project(":new-ble-sdk"))
 
     // Network inspection (Debug only)
     debugImplementation(libs.inspektify.ktor3)
