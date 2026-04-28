@@ -36,7 +36,6 @@ internal class SdkMainActivity : ComponentActivity() {
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
         if (granted) {
-            SdkServiceLocator.locationManager.startLocationUpdates()
             Log.d("SdkMainActivity", "✅ Location permission granted — updates started")
         } else {
             Log.w("SdkMainActivity", "⚠️ Location permission denied — map features may be limited")
@@ -72,9 +71,8 @@ internal class SdkMainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         // Stop location updates when the SDK activity is closed
-        if (SdkServiceLocator.isInitialized()) {
-            SdkServiceLocator.locationManager.stopLocationUpdates()
-        }
+
+
     }
 
     private fun requestLocationPermissionsIfNeeded() {
@@ -87,7 +85,7 @@ internal class SdkMainActivity : ComponentActivity() {
         ) == PackageManager.PERMISSION_GRANTED
 
         if (fineGranted || coarseGranted) {
-            SdkServiceLocator.locationManager.startLocationUpdates()
+
         } else {
             locationPermissionLauncher.launch(
                 arrayOf(

@@ -17,11 +17,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.yuma.oemsdk.Environment
 import com.yuma.oemsdk.YumaSdk
+import com.yuma.oemsdk.YumaSdkConfiguration
 import com.yuma.yumaoemsdk.ui.theme.YumaOemSdkTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        YumaSdk.init(
+            this@MainActivity,
+            sdkConfig = YumaSdkConfiguration(
+                clientKey = "YOUR_CLIENT_KEY",
+                mapApiKey = "YOUR_MAP_API_KEY",
+                environment = Environment.DEV,
+            )
+        )
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -41,7 +52,9 @@ class MainActivity : ComponentActivity() {
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(32.dp))
-                        Button(onClick = { YumaSdk.launchHome(this@MainActivity) }) {
+                        Button(onClick = {
+                            YumaSdk.launchHome(this@MainActivity)
+                        }) {
                             Text("Launch Yuma SDK")
                         }
                     }

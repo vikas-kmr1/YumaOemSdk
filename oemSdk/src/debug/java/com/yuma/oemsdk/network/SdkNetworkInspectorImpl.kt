@@ -1,6 +1,7 @@
 package com.yuma.oemsdk.network
 
 import android.content.Context
+import com.yuma.oemsdk.core_network.SdkNetworkInspector
 import io.ktor.client.HttpClientConfig
 import sp.bvantur.inspektify.ktor.InspektifyKtor
 

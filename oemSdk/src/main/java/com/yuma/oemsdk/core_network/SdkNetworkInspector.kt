@@ -1,6 +1,7 @@
-package com.yuma.oemsdk.network
+package com.yuma.oemsdk.core_network
 
 import android.content.Context
+import com.yuma.oemsdk.network.SdkNetworkInspectorImpl
 import io.ktor.client.HttpClientConfig
 
 /**

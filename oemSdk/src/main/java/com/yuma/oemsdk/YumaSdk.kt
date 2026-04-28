@@ -4,12 +4,22 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.yuma.oemsdk.YumaSdk.init
-import com.yuma.oemsdk.data.network.SdkHomeRemoteDataSource
-import com.yuma.oemsdk.location.SdkLocationManager
-import com.yuma.oemsdk.network.SdkNetworkClient
-import com.yuma.oemsdk.network.SdkSilentAuthManager
-import com.yuma.oemsdk.prefs.SdkPrefManager
+import com.yuma.oemsdk.core_network.HttpClientApiImpl
+import com.yuma.oemsdk.onboarding.SilentAuthViewModel
+import com.yumacustomer.core_logger.api.LoggerApi
+import com.yumacustomer.core_logger.impl.LoggerApiImpl
+import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
+import com.yumaoem.core.utils.device_info.DeviceInfoProvider
+import com.yumaoem.corepreference.api.YumaPrefUtilApi
+import com.yumaoem.corepreference.createDataStore
+import com.yumaoem.corepreference.impl.PreferenceApiImpl
+import com.yumaoem.corepreference.impl.util.YumaPrefUtilImpl
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
+import com.yumaoem.feature_onboarding.data.network.OnboardingRemoteDataSource
+import com.yumaoem.feature_onboarding.data.repository.OnboardingRepositoryImpl
+import com.yumaoem.feature_onboarding.domain.use_case.verify_otp.SilentAuthUseCase
 import io.ktor.client.plugins.auth.providers.BearerTokens
+import kotlinx.serialization.json.Json
 
 
 enum class Environment {
@@ -23,7 +33,7 @@ enum class Environment {
  * @property mapApiKey  The Google Maps API key used internally by the SDK's map screens.
  * @property environment The target backend environment. Defaults to [Environment.PROD].
  */
-class YumaSdkConfiguration private constructor(
+class YumaSdkConfiguration constructor(
     val clientKey: String,
     val mapApiKey: String,
     val environment: Environment
@@ -108,53 +118,44 @@ object YumaSdk {
             val enableLogging = sdkConfig.environment != Environment.PROD
 
             // 1. Preferences (DataStore — no 3rd party DI)
-            val prefManager = SdkPrefManager(applicationContext)
+            val prefManager = initYumaPrefManager(applicationContext)
 
-            // 2. Network client (Ktor + native Android engine — no OkHttp)
-            val networkClient = SdkNetworkClient(
-                baseUrl = baseUrl,
-                enableLogging = enableLogging,
-                tokenProvider = { bearerTokens },
-                onTokenRefreshFailed = {
-                    Log.e(TAG, "Session expired — resetting SDK.")
-                    resetKtorClient()
-                }
+            // 2. Logger (no 3rd party DI)
+            val loggerApi = initYumaLogger(enableLogging)
+
+            // 3. Network client (Ktor + native Android engine — no OkHttp)
+            val networkClient = initYumaNetworkClient(
+                shouldEnableLogging = enableLogging,
+                loggerApi = loggerApi,
+                preferenceUtilApi = prefManager
             )
 
-            // 3. Silent auth manager
-            val silentAuthManager = SdkSilentAuthManager(
-                networkClient = networkClient,
-                onTokensObtained = { access, refresh ->
-                    prefManager.saveTokens(access, refresh)
-                    bearerTokens = BearerTokens(access, refresh)
-                }
+
+            // 3. Location provider
+            val locationProvierr = initYumaLocationProvider(applicationContext)
+
+            // 4. Core Location Provider
+            val locationManager = initYumaCoreLocationProvider(applicationContext)
+
+            // 5. SilentAuthManager
+            val datasource = OnboardingRemoteDataSource(networkClient, locationManager)
+            val deviceInfoProvider = DeviceInfoProvider(applicationContext)
+            val silentAuthManagerFactory = SilentAuthViewModel.Factory(
+                preferenceApi = prefManager,
+                dataSource = datasource,
+                silentAuthUseCase = SilentAuthUseCase(
+                    OnboardingRepositoryImpl(datasource)
+                ),
+                deviceInfoProvider = deviceInfoProvider
             )
-
-            // 4. Location manager
-            val locationManager = SdkLocationManager(applicationContext)
-
-            // 5. Home data source (mirrors OEM HomeRemoteDataSource — no Koin)
-            val remoteDataSource = SdkHomeRemoteDataSource(networkClient)
-
-            // 6. Wire everything into the service locator
-            SdkServiceLocator.initialize(
-                networkClient = networkClient,
-                silentAuthManager = silentAuthManager,
-                prefManager = prefManager,
-                locationManager = locationManager,
-                remoteDataSource = remoteDataSource
-            )
-
-            // 7. Initialize Network Inspector (Debug-only logic abstracted)
-            com.yuma.oemsdk.network.SdkNetworkInspector.create().initialize(applicationContext)
 
             isInitialized = true
             Log.d(TAG, "✅ YumaSdk initialized | env=${sdkConfig.environment} | url=$baseUrl")
+
         }
     }
 
     // ─── Launch ───────────────────────────────────────────────────────────────
-
     /**
      * Launches the SDK's full UI experience.
      *
@@ -178,16 +179,11 @@ object YumaSdk {
 
     // ─── Session Management ───────────────────────────────────────────────────
 
-    /** Called after successful silent auth to store the JWT tokens in memory. */
-    internal fun saveSessionTokens(accessToken: String, refreshToken: String) {
-        bearerTokens = BearerTokens(accessToken, refreshToken)
-        Log.d(TAG, "Session tokens saved.")
-    }
+
 
     /** Resets the Ktor client and clears all tokens (e.g. on logout or session expiry). */
     fun resetKtorClient() {
         bearerTokens = null
-        SdkServiceLocator.reset()
         Log.d(TAG, "🔄 SDK network client reset.")
     }
 
@@ -208,4 +204,52 @@ object YumaSdk {
         return config!!
     }
 
+
+    /* ———————————————————————————————————init-core-services——————————————————————————————————————————————*/
+
+    private fun initYumaNetworkClient(
+        shouldEnableLogging: Boolean,
+        loggerApi: LoggerApi,
+        preferenceUtilApi: YumaPrefUtilApi,
+        environment: Environment = Environment.PROD,
+    ): HttpClientApiImpl {
+        val json = Json {
+            ignoreUnknownKeys = true
+            prettyPrint = false
+            isLenient = true
+            useAlternativeNames = true
+            encodeDefaults = true
+            explicitNulls = false
+        }
+        return HttpClientApiImpl(
+            shouldEnableLogging = shouldEnableLogging,
+            loggerApi = loggerApi,
+            preferenceUtilApi = preferenceUtilApi,
+            json = json,
+            environment = environment
+        )
+    }
+
+    private fun initYumaLogger(shouldEnableLogging: Boolean): LoggerApi =
+        LoggerApiImpl(shouldEnableLogging)
+
+    private fun initYumaPrefManager(context: Context): YumaPrefUtilApi {
+        val prefrenceApi = PreferenceApiImpl(
+            createDataStore(context = context)
+        )
+        return YumaPrefUtilImpl(prefrenceApi)
+    }
+
+    private fun initYumaLocationProvider(context: Context): LocationProvider =
+        LocationProvider(context)
+
+    private fun initYumaCoreLocationProvider(context: Context): CoreLocationProvider =
+        CoreLocationProvider(context)
+
+//    private fun initYumaJitsuAnlatyticApi(): AnalyticsApi {
+//        val segmentAnalytics = SegmentAnalytics()
+//        return AnalyticsManager(
+//
+//        )
+//    }
 }
