@@ -25,14 +25,7 @@ import com.yuma.yumaoemsdk.ui.theme.YumaOemSdkTheme
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        YumaSdk.init(
-            this@MainActivity,
-            sdkConfig = YumaSdkConfiguration(
-                clientKey = "YOUR_CLIENT_KEY",
-                mapApiKey = "YOUR_MAP_API_KEY",
-                environment = Environment.DEV,
-            )
-        )
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {

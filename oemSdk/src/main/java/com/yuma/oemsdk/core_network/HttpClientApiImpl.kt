@@ -201,6 +201,9 @@ class HttpClientApiImpl(
             }
 
             install(ContentNegotiation) { json(json) }
+            // ── Network Inspection (Safety Abstracted) ──────────────────────────
+            if (shouldEnableLogging)
+                SdkNetworkInspector.create().install(this)
         }
     }
 

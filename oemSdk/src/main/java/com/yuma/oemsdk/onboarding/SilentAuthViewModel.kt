@@ -1,5 +1,6 @@
 package com.yuma.oemsdk.onboarding
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -50,22 +51,23 @@ internal class SilentAuthViewModel(
 
     private val _uiEvent = MutableSharedFlow<SilentAuthUiEvent>()
     val uiEvent: SharedFlow<SilentAuthUiEvent> = _uiEvent
-
+    private val TAG  = SilentAuthViewModel::class.java.simpleName
     init {
         viewModelScope.launch {
-            if (!ensureLocationIsEnabled()) return@launch
-            verifyOtp()
+            //if (!ensureLocationIsEnabled()) return@launch
+                silentAuth()
         }
     }
 
-    private fun verifyOtp() {
+    private fun silentAuth() {
         viewModelScope.launch {
+            Log.d(TAG, "silentAuth: ")
             val deviceInfo = deviceInfoProvider.getDeviceInfo()
 
             silentAuthUseCase.invoke(
                 silentAuthRequest = SilentAuthRequest(
                     clientId = 0,
-                    clientKey = "",
+                    clientKey = com.yuma.oemsdk.YumaSdk.getConfig().clientKey,
                     model = deviceInfo.model,
                     manufacturer = deviceInfo.manufacturer,
                     osName = deviceInfo.osName,
@@ -112,7 +114,7 @@ internal class SilentAuthViewModel(
             EventController.sendEvent(
                 ShowEnableLocationDialog(
                     onLocationEnabled = {
-                        verifyOtp()
+                        silentAuth()
                     },
                     onLocationDenied = {
                         viewModelScope.launch {
@@ -191,6 +193,7 @@ internal class SilentAuthViewModel(
         )
         sendIdentifyUserEvent(user = user)
         sendLoginSuccessfulEvent(user = user)
+        _uiEvent.emit(SilentAuthUiEvent.NavigateToHomeScreen)
     }
 
     private fun sendIdentifyUserEvent(user: com.yumaoem.feature_onboarding.domain.model.verify_otp.response.User) {

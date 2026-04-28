@@ -88,6 +88,9 @@ object YumaSdk {
     @Volatile
     private var bearerTokens: BearerTokens? = null
 
+    // Factory for SilentAuthViewModel
+    internal var silentAuthViewModelFactory: SilentAuthViewModel.Factory? = null
+
     // ─── Initialization ───────────────────────────────────────────────────────
 
     /**
@@ -108,6 +111,7 @@ object YumaSdk {
             if (isInitialized) return
 
             applicationContext = context.applicationContext
+            com.yumaoem.core.utils.context.AndroidContextProvider.context = applicationContext
             config = sdkConfig
 
             val baseUrl = when (sdkConfig.environment) {
@@ -140,7 +144,7 @@ object YumaSdk {
             // 5. SilentAuthManager
             val datasource = OnboardingRemoteDataSource(networkClient, locationManager)
             val deviceInfoProvider = DeviceInfoProvider(applicationContext)
-            val silentAuthManagerFactory = SilentAuthViewModel.Factory(
+            silentAuthViewModelFactory = SilentAuthViewModel.Factory(
                 preferenceApi = prefManager,
                 dataSource = datasource,
                 silentAuthUseCase = SilentAuthUseCase(

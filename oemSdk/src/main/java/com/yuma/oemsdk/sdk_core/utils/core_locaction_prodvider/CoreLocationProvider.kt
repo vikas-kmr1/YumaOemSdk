@@ -107,10 +107,15 @@ class CoreLocationProvider  constructor(
             setMaxUpdates(1)
         }.build()
 
-        fusedLocationClient
-            .lastLocation
-            .result
-            ?.let { return@withContext CoreLatLong(it.latitude, it.longitude) }
+        try {
+            if (fusedLocationClient.lastLocation.isComplete) {
+                fusedLocationClient.lastLocation.result?.let {
+                    return@withContext CoreLatLong(it.latitude, it.longitude)
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore and fall through to requestLocationUpdates
+        }
 
         withTimeout(30_000) {
             suspendCancellableCoroutine<CoreLatLong?> { cont ->

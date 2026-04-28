@@ -5,6 +5,11 @@ plugins {
     id("maven-publish")
 }
 
+// Move Toolchain to top-level to ensure Gradle uses a proper JDK with jlink
+kotlin {
+    jvmToolchain(17)
+}
+
 android {
     namespace = "com.yuma.oemsdk"
     compileSdk {
@@ -38,12 +43,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-
-    // Use Java Toolchain to ensure a valid JDK is used
-    kotlin {
-        jvmToolchain(17)
     }
 }
 
@@ -83,16 +82,16 @@ dependencies {
     // Image loading
     implementation(libs.coil.compose)
 
-    // ─── Ktor Network Layer (No OkHttp — avoids dependency conflicts in host apps) ───
+    // ─── Ktor Network Layer ───
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.android)           // Native Android engine (HttpURLConnection)
+    implementation(libs.ktor.client.android)           // Native Android engine
     implementation(libs.ktor.client.auth)              // Bearer token auto-refresh
     implementation(libs.ktor.client.content.negotiation) // JSON content type handling
-    implementation(libs.ktor.client.logging)           // Network logging (debug only)
+    implementation(libs.ktor.client.logging)           // Network logging
     implementation(libs.ktor.serialization.kotlinx.json) // JSON parsing via Ktor
 
-    implementation(libs.kotlinx.serialization.json)   // Kotlinx JSON serialization
-    implementation(libs.kotlinx.datetime.v061)   // Kotlinx JSON serialization
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime.v061)
 
     implementation(libs.coroutines.core)
 
@@ -112,7 +111,6 @@ dependencies {
     debugImplementation(libs.inspektify.ktor3)
 }
 
-
 android {
     publishing {
         singleVariant("release") {
@@ -127,9 +125,9 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.github.vikas-kmr1" // Replace with your GitHub username
-                artifactId = "oem_sdk_beta" // Replace with the name of your SDK
-                version = "1.0.0" // Replace with the version you want to publish
+                groupId = "com.github.vikas-kmr1"
+                artifactId = "oem_sdk_beta"
+                version = "1.0.0"
             }
         }
     }

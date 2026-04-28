@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import com.segment.analytics.BuildConfig
 import com.yuma.oemsdk.navigation.SdkNavHost
+import com.yumaoem.core_ui.theme.YumaAppTheme
 
 /**
  * The SDK's internal Activity, launched when [YumaSdk.launchHome] is called.
@@ -62,9 +63,11 @@ internal class SdkMainActivity : ComponentActivity() {
         requestLocationPermissionsIfNeeded()
 
         setContent {
-            SdkNavHost(
-                onDismiss = { finish() }
-            )
+            YumaAppTheme() {
+                SdkNavHost(
+                    onDismiss = { finish() }
+                )
+            }
         }
     }
 
