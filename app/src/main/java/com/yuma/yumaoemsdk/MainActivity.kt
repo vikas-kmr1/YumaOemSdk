@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                         Button(onClick = {
-                            YumaSdk.launchHome(this@MainActivity)
+                            YumaSdk.launchSdk(this@MainActivity)
                         }) {
                             Text("Launch Yuma SDK")
                         }

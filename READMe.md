@@ -39,3 +39,25 @@ dependencies {
     implementation("com.github.vikas-kmr1:YumaOemSdk:Tag")
 }
 ```
+
+#### Application (`ClientApplication.kt`)
+##### Step 1: Initialize Yuma OEM SDK
+```kotlin
+    override fun onCreate() {
+        super.onCreate()
+        
+        // Initialize Yuma OEM SDK
+        val sdkConfig = YumaSdkConfiguration.Builder()
+            .setClientKey("CLIENT_API_KEY") // Replace with real key
+            .setMapApiKey("YOUR_API_KEY")
+            .setEnvironment(Environment.DEV) // DEV, PREPROD, PROD
+            .build()
+            
+        YumaSdk.init(this, sdkConfig)
+    }
+```
+
+##### Step 2: Launch Sdk Home
+```kotlin
+    YumaSdk.launchSdk(this@MainActivity)
+```

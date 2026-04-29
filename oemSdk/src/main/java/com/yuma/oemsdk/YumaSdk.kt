@@ -246,7 +246,7 @@ object YumaSdk {
                 dataSource = homeDataSource,
                 loggerApi = loggerApi,
                 prefUtilApi = prefManager,
-                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                commonAnalyticsParamsProvider = c,
             )
 
             isInitialized = true
@@ -265,7 +265,7 @@ object YumaSdk {
      * @throws IllegalStateException if [init] has not been called.
      */
     @JvmStatic
-    fun launchHome(context: Context) {
+    fun launchSdk(context: Context) {
         check(isInitialized) { "YumaSdk not initialized. Call YumaSdk.init() first." }
         val intent = Intent(context, SdkMainActivity::class.java).apply {
             // Ensure new task if launching from non-Activity context
