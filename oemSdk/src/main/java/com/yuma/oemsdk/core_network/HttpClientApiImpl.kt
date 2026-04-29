@@ -58,7 +58,7 @@ class HttpClientApiImpl(
     private val json: Json,
     private val loggerApi: LoggerApi,
     private val preferenceUtilApi: YumaPrefUtilApi,
-    environment: Environment = Environment.PROD
+    environment: Environment
 ) : HttpClientApi {
     private val TAG = HttpClientApiImpl::class.java.simpleName
 

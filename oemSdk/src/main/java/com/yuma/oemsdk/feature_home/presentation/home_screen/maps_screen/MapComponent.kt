@@ -5,8 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -18,6 +22,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -34,21 +41,30 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.MarkerState.Companion.invoke
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.kmm_flow_util.handle_permissions.PermissionHandlerViewmodel
 import com.yumaoem.core.utils.map_style.MapStyle
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core_ui.components.permission_denied_dlalog.OpenSettingsDialog
 import com.yumaoem.core_ui.theme.color.Colors
 import com.yumaoem.core_ui.theme.color.LocalColors
+import com.yumaoem.core_ui.utils.collectAsLaunchedEffect
+import com.yumaoem.core_ui.utils.snackbar.SnackbarController
+import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.dialogs.BookingConfirmationModalBottomSheet
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.dialogs.CannotBookModalBottomSheet
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.dialogs.NoActivePlansModalBottomSheet
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.map_markers.ActiveSelectedYumaStationMarker
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.map_markers.ActiveYumaStationMarker
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.map_markers.InActiveSelectedYumaStationMarker
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.map_markers.InActiveYumaStationMarker
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.carousel_view.StationsCarouselViewRoot
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.BookingDialogState
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.HomeMapScreenEvent
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapScreenUiEvent
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapViewModel
 import dev.icerock.moko.permissions.PermissionState
 import dev.icerock.moko.permissions.compose.BindEffect
@@ -56,9 +72,6 @@ import dev.icerock.moko.permissions.compose.rememberPermissionsControllerFactory
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlin.collections.forEach
-import kotlin.collections.isNotEmpty
-import kotlin.collections.orEmpty
 
 @Composable
 fun MapScreenRoot(
@@ -146,19 +159,21 @@ fun MapScreenContent(
     onPurchasePlanClicked: () -> Unit,
     navigateToTagBattery: () -> Unit
 ) {
-}
-/*
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        val viewModel = koinViewModel<MapViewModel>()
+        val viewModel: MapViewModel = viewModel(
+            factory = YumaSdk.mapViewModel
+        )
         val mapState by viewModel.mapState.collectAsState()
+
         viewModel.uiEvent.collectAsLaunchedEffect(Unit) { event ->
             when (event) {
                 is MapScreenUiEvent.TokenBooked -> {
                     onTokenBooked()
                 }
+
                 is MapScreenUiEvent.ShowSnackbar -> {
                     SnackbarController.sendEvent(
                         event = SnackbarEvent(
@@ -194,7 +209,7 @@ fun MapScreenContent(
         val density = LocalDensity.current
         var carouselHeightPx by remember { mutableStateOf(0) }
 
-        if (isHomeTab){
+        if (isHomeTab) {
             Box(Modifier.fillMaxSize()) {
                 MapViewRoot(
                     modifier = Modifier
@@ -241,7 +256,7 @@ fun MapScreenContent(
         when (mapState.bookingDialogState) {
             BookingDialogState.BookingInProgress -> {
                 BookingConfirmationModalBottomSheet(
-                    title = stringResource(Res.string.booking_in_progress),
+                    title = stringResource(R.string.booking_in_progress),
                     isBookingInProgress = true,
                     onDismissRequest = {
                         viewModel.onEvent(event = HomeMapScreenEvent.OnDismissBookingConfirmationDialog)
@@ -254,7 +269,7 @@ fun MapScreenContent(
 
             BookingDialogState.Showing -> {
                 BookingConfirmationModalBottomSheet(
-                    title = stringResource(Res.string.confirm_booking),
+                    title = stringResource(R.string.confirm_booking),
                     onDismissRequest = {
                         viewModel.onEvent(event = HomeMapScreenEvent.OnDismissBookingConfirmationDialog)
                     },
@@ -285,7 +300,7 @@ fun MapScreenContent(
             }
         }
     }
-}*/
+}
 
 
 fun isNextOpeningTimeLessThanOneMinute(nextOpeningTime: Int?): Boolean {
@@ -332,8 +347,8 @@ fun MapComponent(viewModel: MapViewModel) {
 
     val uiSettings = remember {
         MapUiSettings(
-            mapToolbarEnabled     = false,
-            zoomControlsEnabled   = false
+            mapToolbarEnabled = false,
+            zoomControlsEnabled = false
         )
     }
 
@@ -376,9 +391,17 @@ fun MapComponent(viewModel: MapViewModel) {
             val pathHash = selectedPath.hashCode()
             if (lastPathHash != pathHash) {
                 lastPathHash = pathHash
-                if (!hasCentered){
-                    val nearbyStations = viewModel.getNearbyStationsAndUserLocation(currentLocation!!)
-                    nearbyStations.forEach { boundsBuilder.include(LatLng(it.latitude, it.longitude)) }
+                if (!hasCentered) {
+                    val nearbyStations =
+                        viewModel.getNearbyStationsAndUserLocation(currentLocation!!)
+                    nearbyStations.forEach {
+                        boundsBuilder.include(
+                            LatLng(
+                                it.latitude,
+                                it.longitude
+                            )
+                        )
+                    }
                     val innerBounds = boundsBuilder.build()
                     cameraPositionState.move(
                         update = CameraUpdateFactory.newLatLngBounds(
@@ -386,7 +409,7 @@ fun MapComponent(viewModel: MapViewModel) {
                         )
                     )
                     hasCentered = true
-                }else{
+                } else {
                     cameraPositionState.animate(
                         update = CameraUpdateFactory.newLatLngBounds(
                             bounds, 160
@@ -402,7 +425,12 @@ fun MapComponent(viewModel: MapViewModel) {
         var lastClickTime by remember { mutableLongStateOf(0L) }
         Box(Modifier.fillMaxSize()) {
             GoogleMap(
-                contentPadding = PaddingValues(start = 0.dp, top = 40.dp, end = 0.dp, bottom = 0.dp),
+                contentPadding = PaddingValues(
+                    start = 0.dp,
+                    top = 40.dp,
+                    end = 0.dp,
+                    bottom = 0.dp
+                ),
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
                 uiSettings = uiSettings,
@@ -486,7 +514,8 @@ fun MapComponent(viewModel: MapViewModel) {
                     mapState.currentRouteStation?.let { station ->
                         val pathEnd = path.lastOrNull()
                         if (pathEnd != null) {
-                            val pathEndLatLng = LatLng(pathEnd.latitude.orZero(), pathEnd.longitude.orZero())
+                            val pathEndLatLng =
+                                LatLng(pathEnd.latitude.orZero(), pathEnd.longitude.orZero())
                             val stationLatLng = LatLng(
                                 station.location.latitude.orZero(),
                                 station.location.longitude.orZero()

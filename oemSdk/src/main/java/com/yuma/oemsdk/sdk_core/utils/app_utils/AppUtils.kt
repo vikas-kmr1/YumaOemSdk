@@ -30,10 +30,10 @@ fun hideKeyboard() {
     }
 }
 
-//TODO
-//suspend fun getFcmToken(): String {
-//    return FirebaseMessaging.getInstance().token.await()
-//}
+
+suspend fun getFcmToken(): String {
+    return  "" //FirebaseMessaging.getInstance().token.await()
+}
 
 fun isAndroid12OrLower(): Boolean {
     return Build.VERSION.SDK_INT <= Build.VERSION_CODES.S

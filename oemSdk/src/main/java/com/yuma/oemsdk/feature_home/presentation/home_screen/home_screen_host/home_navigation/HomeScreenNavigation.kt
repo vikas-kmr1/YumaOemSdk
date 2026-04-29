@@ -1,5 +1,6 @@
 package com.yumaoem.feature_home.presentation.home_screen.home_screen_host.home_navigation
 
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -7,12 +8,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.yuma.oemsdk.YumaSdk
+import com.yuma.oemsdk.onboarding.SilentAuthViewModel
 import com.yumaoem.core.app_navigation_state.HomeScreenDestination
 import com.yumaoem.core.utils.global_events.HideBottomBar
 import com.yumaoem.core.utils.global_events.ShowBottomBar
@@ -23,6 +27,7 @@ import com.yumaoem.core_ui.utils.animation.defaultPopEnterTransition
 import com.yumaoem.core_ui.utils.animation.defaultPopExitTransition
 
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.args.SwapInProgressScreenArgs
+import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanMachineQrScreenRoot
 
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.event.HomeScreenEvent
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewmodel.HomeViewModel
@@ -43,8 +48,10 @@ var currentHomeScreen: String? = null
 fun HomeScreenRoot(
     isHomeTab: Boolean,
     navigateToPaymentsTab: () -> Unit
-) {}/*
-    //val viewModel = koinViewModel<HomeViewModel>()
+) {
+    val viewModel: HomeViewModel = viewModel(
+        factory = YumaSdk.homeViewModelFactory
+    )
     val navController = rememberNavController()
 
     // Observe the current destination from the repository (via ViewModel)
@@ -182,35 +189,37 @@ private fun NavGraphBuilder.navigateAsPerState(
     }
 
     composable<DiySwapInProgressScreen> {
-        if (viewModel.swapInProgressScreenArgs != null) {
-            DiySwapInProgressScreenRoot(
-                isHomeTab = isHomeTab,
-                onRetry = {
-                    viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
-                },
-                onSuccessfulSwap = { swapTime ->
-                    viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
-                },
-                args = viewModel.swapInProgressScreenArgs!!
-            )
-        }
+        Text("DiySwapInProgressScreen")
+//        if (viewModel.swapInProgressScreenArgs != null) {
+//            DiySwapInProgressScreenRoot(
+//                isHomeTab = isHomeTab,
+//                onRetry = {
+//                    viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
+//                },
+//                onSuccessfulSwap = { swapTime ->
+//                    viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
+//                },
+//                args = viewModel.swapInProgressScreenArgs!!
+//            )
+//        }
     }
 
     composable<DiySwapStartedScreen> {
-        DiySwapInProgressScreenRoot(
-            onRetry = {
-                viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
-            },
-            onSuccessfulSwap = { swapTime ->
-                viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
-            },
-            args = SwapInProgressScreenArgs(
-                checkInTime = 0L,
-                ycuQrCode = null,
-                isSwapInitiated = true
-            ),
-            isHomeTab = isHomeTab
-        )
+        Text("DiySwapStartedScreen")
+//        DiySwapInProgressScreenRoot(
+//            onRetry = {
+//                viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
+//            },
+//            onSuccessfulSwap = { swapTime ->
+//                viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
+//            },
+//            args = SwapInProgressScreenArgs(
+//                checkInTime = 0L,
+//                ycuQrCode = null,
+//                isSwapInitiated = true
+//            ),
+//            isHomeTab = isHomeTab
+//        )
     }
 
     composable<TagBatteryScannerScreen> {
@@ -222,7 +231,6 @@ private fun NavGraphBuilder.navigateAsPerState(
         )
     }
 }
-*/
 fun hideBottomNavigationBar() {
     val coroutineScope = CoroutineScope(Dispatchers.Main+ SupervisorJob())
     coroutineScope.launch {

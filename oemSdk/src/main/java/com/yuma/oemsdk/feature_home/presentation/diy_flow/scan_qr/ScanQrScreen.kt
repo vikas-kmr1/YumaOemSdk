@@ -1,4 +1,3 @@
-/*
 package com.yumaoem.feature_home.presentation.diy_flow.scan_qr
 
 import androidx.activity.compose.BackHandler
@@ -45,15 +44,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.yuma.oemsdk.R
 
 import com.yumaoem.core.utils.global_events.HideBottomBar
 import com.yumaoem.core.utils.global_events.ShowBottomBar
 import com.yumaoem.core.utils.global_events.bottom_bar_event.BottomBarEventController
 import com.yumaoem.core.utils.noRippleDebounceClickable
-=
 import com.yumaoem.core_ui.components.snackbar.SuccessSnackbar
 
 import com.yumaoem.core_ui.theme.color.Colors
@@ -87,7 +88,7 @@ fun ScanMachineQrScreenRoot(
     navigateToSwapInProgress: (String) -> Unit,
     onTokenCheckInReverted: () -> Unit,
     isHomeTab: Boolean
-) {
+) {}/*
     val viewModel = koinViewModel<ScanQrViewModel>()
     val uiState = viewModel.uiState.collectAsState()
     val showIllustrationScreen = uiState.value.showIllustrationScreen
@@ -265,7 +266,7 @@ private fun ScanMachineQrScreen(
                     println("Enter pressed with value: $qrNumber")
                     onScanCompleted(qrNumber,false)
                 },
-                keyboardIcon = painterResource(Res.drawable.ic_keyboard_alt),
+                keyboardIcon = painterResource(R.drawable.ic_keyboard_alt),
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(start = 32.dp, end = 32.dp, top = 100.dp)
@@ -326,9 +327,9 @@ fun ScannerScreenHeader(
     onFlashLightClicked: () -> Unit,
 ) {
     val flashIcon = if (isFlashLightOn) {
-        painterResource(Res.drawable.ic_flash_on)
+        painterResource(R.drawable.ic_flash_on)
     } else {
-        painterResource(Res.drawable.ic_flash_off)
+        painterResource(R.drawable.ic_flash_off)
     }
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -338,7 +339,7 @@ fun ScannerScreenHeader(
     ) {
 
         Image(
-            painter = painterResource(Res.drawable.ic_go_back),
+            painter = painterResource(R.drawable.ic_go_back),
             contentDescription = "",
             modifier = Modifier
                 .padding(bottom = 20.dp, end = 20.dp)

@@ -15,8 +15,7 @@ import com.yumaoem.core_ui.utils.animation.defaultExitTransition
 import com.yumaoem.core_ui.utils.animation.defaultPopEnterTransition
 import com.yumaoem.core_ui.utils.animation.defaultPopExitTransition
 import com.yumaoem.feature_home.domain.model.payments.UiPlan
-import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.home_navigation.hideBottomNavigationBar
-import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.home_navigation.showBottomNavigationBar
+
 import com.yumaoem.feature_home.presentation.payments.payment_details.PaymentDetailsScreenRoot
 import com.yumaoem.feature_home.presentation.payments.payment_home.components.PaymentHomeScreenRoot
 import com.yumaoem.feature_home.presentation.payments.payment_success.PaymentSuccessScreenRoot
@@ -41,10 +40,10 @@ fun PaymentFlowNavigation(
 
         when {
             currentRoute.contains("PaymentDetailsScreen") -> {
-                hideBottomNavigationBar()
+               // hideBottomNavigationBar()
             }
             else -> {
-                showBottomNavigationBar()
+                //showBottomNavigationBar()
             }
         }
     }

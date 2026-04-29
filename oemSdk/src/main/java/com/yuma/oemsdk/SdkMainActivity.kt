@@ -63,7 +63,7 @@ internal class SdkMainActivity : ComponentActivity() {
         requestLocationPermissionsIfNeeded()
 
         setContent {
-            YumaAppTheme() {
+            YumaAppTheme {
                 SdkNavHost(
                     onDismiss = { finish() }
                 )

@@ -1,9 +1,8 @@
-/*
 package com.yumaoem.feature_home.presentation.diy_flow.scan_qr
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.yumacustomer.core_analytics.api.AnalyticsApi
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.model.auth.User
 import com.yumaoem.core.utils.global_events.HideKeyboard
@@ -24,7 +23,9 @@ import com.yumaoem.feature_home.domain.usecase.revert_token_status.RevertTokenCh
 import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.QrScannerUiEvent.NavigateToSwapInProgress
 import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.QrScannerUiEvent.OnTokenCheckInReverted
 import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.QrScannerUiEvent.ShowError
-import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanQrUiStateBottomSheet.*
+import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanQrUiStateBottomSheet.GetCallbackBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanQrUiStateBottomSheet.IncorrectQRModalBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanQrUiStateBottomSheet.None
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +41,7 @@ class ScanQrViewModel(
     private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
     private val autoDialerRequestUseCase: AutoDialerRequestUseCase,
     private val preferenceApi: YumaPrefUtilApi,
-    private val analyticsApi: AnalyticsApi,
+    //private val analyticsApi: AnalyticsApi,
     private val loggerApi: LoggerApi
 ) : ViewModel() {
 
@@ -152,30 +153,30 @@ class ScanQrViewModel(
                     )
                 )
             )
-           autoDialerRequestUseCase.invoke(
-               autoDialerRequestDTO
-           ).collect(
-               onLoading = {
-                   _uiState.value = _uiState.value.copy(
-                       bottomSheet = GetCallbackBottomSheet(
-                           mobileNumber = contactNumber,
-                           isLoading = true
-                       )
-                   )
-               },
-               onSuccess = {
-                   _uiState.value = _uiState.value.copy(
-                       bottomSheet = None
-                   )
-                   _uiEvent.send(QrScannerUiEvent.ShowSuccessSnackbar(it.message))
-               },
-               onError = { errorMessage, _ ->
-                   _uiEvent.send(ShowError(errorMessage))
-                   _uiState.value = _uiState.value.copy(
-                       bottomSheet = None
-                   )
-               }
-           )
+            autoDialerRequestUseCase.invoke(
+                autoDialerRequestDTO
+            ).collect(
+                onLoading = {
+                    _uiState.value = _uiState.value.copy(
+                        bottomSheet = GetCallbackBottomSheet(
+                            mobileNumber = contactNumber,
+                            isLoading = true
+                        )
+                    )
+                },
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        bottomSheet = None
+                    )
+                    _uiEvent.send(QrScannerUiEvent.ShowSuccessSnackbar(it.message))
+                },
+                onError = { errorMessage, _ ->
+                    _uiEvent.send(ShowError(errorMessage))
+                    _uiState.value = _uiState.value.copy(
+                        bottomSheet = None
+                    )
+                }
+            )
         }
     }
 
@@ -189,7 +190,7 @@ class ScanQrViewModel(
                 onLoading = {},
                 onSuccess = {
                     val tokenDetails = preferenceApi.getBookedTokenDetails()
-                    if(tokenDetails != null) {
+                    if (tokenDetails != null) {
                         preferenceApi.saveBookedTokenDetails(
                             tokenDetails.copy(
                                 tokenExpiryTimeStamp = it.expiredTimeStamp.orZero()
@@ -216,11 +217,14 @@ class ScanQrViewModel(
             _uiState.value = _uiState.value.copy(
                 showIllustrationScreen = isNewDiyUser
             )
-            loggerApi.logDWithTag("ScanQrViewModel","isNewDiyUser: $isNewDiyUser, showIllustrationScreen: ${_uiState.value.showIllustrationScreen}")
+            loggerApi.logDWithTag(
+                "ScanQrViewModel",
+                "isNewDiyUser: $isNewDiyUser, showIllustrationScreen: ${_uiState.value.showIllustrationScreen}"
+            )
         }
     }
 
-    fun changeShowIllustrationScreenStatus(status:Boolean) {
+    fun changeShowIllustrationScreenStatus(status: Boolean) {
         _uiState.value = _uiState.value.copy(
             showIllustrationScreen = status
         )
@@ -269,28 +273,49 @@ class ScanQrViewModel(
     private fun sendScanYcuCompleteEvent(isSuccess: Boolean, errorMessage: String? = null) {
         viewModelScope.launch {
             val commonParams = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
-                event = "scan_ycu_complete",
-                values = commonParams + mapOf(
-                    "is_QR_scan" to uiState.value.isQrScan,
-                    "status" to if (isSuccess) "success" else "failed",
-                    "failure_reason" to errorMessage.orEmpty(),
-                    "ycu_number" to uiState.value.scannedQrCode.orEmpty(),
-                )
-            )
+            /*   analyticsApi.postEvent(
+                   event = "scan_ycu_complete",
+                   values = commonParams + mapOf(
+                       "is_QR_scan" to uiState.value.isQrScan,
+                       "status" to if (isSuccess) "success" else "failed",
+                       "failure_reason" to errorMessage.orEmpty(),
+                       "ycu_number" to uiState.value.scannedQrCode.orEmpty(),
+                   )
+               )*/
         }
     }
 
     fun sendScanYcuScreenViewed() {
         viewModelScope.launch {
             val commonParams = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
-                event = "screen_viewed",
-                values = commonParams + mapOf(
-                    "screen_name" to "scan_ycu_screen"
-                )
-            )
+            /*   analyticsApi.postEvent(
+                   event = "screen_viewed",
+                   values = commonParams + mapOf(
+                       "screen_name" to "scan_ycu_screen"
+                   )
+               )*/
         }
+    }
+
+    class Factory(
+        private val startDiyFlowUseCase: StartDiyFlowUseCase,
+        private val revertTokenCheckInStatusUseCase: RevertTokenCheckInStatusUseCase,
+        private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
+        private val autoDialerRequestUseCase: AutoDialerRequestUseCase,
+        private val preferenceApi: YumaPrefUtilApi,
+        //private val analyticsApi: AnalyticsApi,
+        private val loggerApi: LoggerApi
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            ScanQrViewModel(
+                startDiyFlowUseCase = startDiyFlowUseCase,
+                revertTokenCheckInStatusUseCase = revertTokenCheckInStatusUseCase,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                autoDialerRequestUseCase = autoDialerRequestUseCase,
+                preferenceApi = preferenceApi,
+                loggerApi = loggerApi,
+            ) as T
     }
 }
 
@@ -301,4 +326,3 @@ sealed class QrScannerUiEvent {
     data class ShowSuccessSnackbar(val message: String) : QrScannerUiEvent()
 }
 
-*/

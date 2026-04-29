@@ -1,8 +1,8 @@
 package com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-
 import com.yumaoem.core.model.auth.User
 import com.yumaoem.core.utils.currentTimeMillis
 import com.yumaoem.core.utils.kmm_flow_util.CommonStateFlow
@@ -28,7 +28,8 @@ import com.yumaoem.feature_home.domain.usecase.maps.route_info.GetRouteInfoUseCa
 import com.yumaoem.feature_home.domain.usecase.maps.station_operation_status.GetStationOperationStatusUseCase
 import com.yumaoem.feature_home.domain.usecase.token_booking.book_token.BookTokenUseCase
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
-import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapScreenUiEvent.*
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapScreenUiEvent.NavigateToTagBattery
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapScreenUiEvent.ShowSnackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -56,10 +57,10 @@ class MapViewModel(
     private val getAllStationsUseCase: GetAllStationsUseCase,
     private val getRouteInfoUseCase: GetRouteInfoUseCase,
     private val stationOperationStatusUseCase: GetStationOperationStatusUseCase,
-  //  private val loggerApi: LoggerApi,
+    //  private val loggerApi: LoggerApi,
     private val prefUtilApi: YumaPrefUtilApi,
     private val serviceLauncher: ServiceLauncher,
-   // private val analyticsApi: AnalyticsApi,
+    // private val analyticsApi: AnalyticsApi,
     private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
 ) : ViewModel() {
 
@@ -83,12 +84,14 @@ class MapViewModel(
             }
 
             is HomeMapScreenEvent.StationSelectedFromCarousel -> {
-                if (event.station.stationId == mapState.value.selectedStation?.stationId) { return }
+                if (event.station.stationId == mapState.value.selectedStation?.stationId) {
+                    return
+                }
                 onMarkerSelected(event.station)
             }
 
             is HomeMapScreenEvent.StationSelected -> {
-                if (event.station.stationId == mapState.value.selectedStation?.stationId){
+                if (event.station.stationId == mapState.value.selectedStation?.stationId) {
                     val station = event.station
                     val directionsViewCount = station.directionsViewCount
                     val updatedMarker = station.copy(
@@ -108,7 +111,7 @@ class MapViewModel(
                         longitude = event.station.location.longitude
                     )
 
-                }else{
+                } else {
                     onMarkerSelected(event.station)
                 }
 
@@ -164,8 +167,9 @@ class MapViewModel(
                     serviceLauncher.stopForeGroundNotification()
                     _uiEvent.emit(MapScreenUiEvent.ShowSnackbar("User details not found"))
                     return@launch
-                }else{
-                    val distance = mapState.value.selectedStation?.stationCurrentStatus?.distanceInMeters
+                } else {
+                    val distance =
+                        mapState.value.selectedStation?.stationCurrentStatus?.distanceInMeters
                     bookTokenUseCase.invoke(
                         bookTokenRequest = BookTokenRequest(
                             chargingStationId = mapState.value.selectedStation?.stationId.orZero(),
@@ -251,7 +255,7 @@ class MapViewModel(
         onMapViewModelInit()
     }
 
-    fun resetLaunchTime(){
+    fun resetLaunchTime() {
         _mapState.update { it.copy(launchTimeStamp = currentTimeMillis()) }
     }
 
@@ -290,7 +294,9 @@ class MapViewModel(
             if (cachedUser == null) {
                 cachedUser = prefUtilApi.getUserData()
             }
-            val location = _mapState.value.userLocation ?: currentLocation.first { it?.latitude != null } ?: return@launch
+            val location =
+                _mapState.value.userLocation ?: currentLocation.first { it?.latitude != null }
+                ?: return@launch
             getAllNearbyStations(location, skipOptimization = isPostSwap)
         }
     }
@@ -317,9 +323,9 @@ class MapViewModel(
         ).collect(
             onLoading = {},
             onSuccess = { data ->
-                if (data.isEmpty().not()){
+                if (data.isEmpty().not()) {
                     getNearestStations(data, location, skipOptimization)
-                }else{
+                } else {
                     _uiEvent.emit(MapScreenUiEvent.ShowSnackbar("No nearby stations found"))
                 }
 
@@ -379,11 +385,13 @@ class MapViewModel(
                 if (hasNoOpenStation) {
                     //loggerApi.logDWithTag("MapViewModel", "no open stations in top 5")
                     // no open stations in top 5 — find the first open anywhere
-                    firstOpenStation = sortedStations.first { it.stationCurrentStatus.stationState.isOperational() }
+                    firstOpenStation =
+                        sortedStations.first { it.stationCurrentStatus.stationState.isOperational() }
                     onMarkerSelected(firstOpenStation)
                 } else {
                     // at least one open in top 5
-                    firstOpenStation = sortedStations.first { it.stationCurrentStatus.stationState.isOperational() }
+                    firstOpenStation =
+                        sortedStations.first { it.stationCurrentStatus.stationState.isOperational() }
                     //loggerApi.logDWithTag("MapViewModel", "at least one open station in top 5 - $firstOpenStation")
 
                     val openStationsInTop5 = top5Stations
@@ -423,7 +431,7 @@ class MapViewModel(
         )
         _mapState.value = _mapState.value.copy(
             selectedStation = updatedMarker,
-            numberOfStationsSelected = numberOfStationsSelected+1,
+            numberOfStationsSelected = numberOfStationsSelected + 1,
             carouselStations = currentState.carouselStations.map {
                 if (it.stationId == updatedMarker.stationId) updatedMarker else it
             }
@@ -432,16 +440,16 @@ class MapViewModel(
         if (marker.stationCurrentStatus.routeData != null) {
             updateMapWithExistingRoute(marker)
         } else {
-            if (origin!=null){
+            if (origin != null) {
                 fetchAndUpdateRouteData(origin, marker)
             }
         }
 
         if (marker.stationCurrentStatus.isAmongNearestStations.not()) {
             viewModelScope.launch {
-                getStationOperationStatus(marker.stationId,marker)
+                getStationOperationStatus(marker.stationId, marker)
             }
-        } else{
+        } else {
             sendStationViewEvent(marker)
         }
     }
@@ -458,7 +466,7 @@ class MapViewModel(
     private fun fetchAndUpdateRouteData(origin: LatLong, marker: YumaStationMarker) {
         getRouteData(origin, marker) { route ->
             val currentStation = mapState.value.selectedStation
-            if (currentStation==null) return@getRouteData
+            if (currentStation == null) return@getRouteData
             _mapState.update { currentMapState ->
                 val distance = route.distanceInMeters
                 val distanceDisplay = formatDistance(distance)
@@ -620,7 +628,7 @@ class MapViewModel(
             )
         ).collect(
             onLoading = {},
-            onSuccess = { currentStationStatus->
+            onSuccess = { currentStationStatus ->
                 // Update map state
                 val updatedStations = _mapState.value.carouselStations.map { marker ->
                     if (marker.stationId == csId) {
@@ -643,8 +651,8 @@ class MapViewModel(
 
     private fun sendDirectionsViewEvent(
         marker: YumaStationMarker,
-        ctaUsed:String
-    ){
+        ctaUsed: String
+    ) {
         viewModelScope.launch {
             val currentStation = mapState.value.selectedStation
             val currentUser = prefUtilApi.getUserData()
@@ -689,7 +697,7 @@ class MapViewModel(
         }
     }
 
-    private fun sendTokenBookingFailedEvent(failureReason:String) {
+    private fun sendTokenBookingFailedEvent(failureReason: String) {
         viewModelScope.launch {
             val userDetails = prefUtilApi.getUserData()
             val baseValues = getBookTokenValuesMap().toMutableMap()
@@ -702,7 +710,7 @@ class MapViewModel(
         }
     }
 
-    private fun sendBookTokenEvent(tokenNumber: String,tokenId:String, isDiy: Boolean) {
+    private fun sendBookTokenEvent(tokenNumber: String, tokenId: String, isDiy: Boolean) {
         sendHomeScreenSessionDurationEvent()
         viewModelScope.launch {
             val userDetails = prefUtilApi.getUserData()
@@ -718,7 +726,7 @@ class MapViewModel(
         }
     }
 
-    private fun sendHomeScreenSessionDurationEvent(){
+    private fun sendHomeScreenSessionDurationEvent() {
         viewModelScope.launch {
             val currentUser = prefUtilApi.getUserData()
 //            analyticsApi.postEvent(
@@ -762,7 +770,8 @@ class MapViewModel(
             "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
             "mobile_number" to currentUser?.phone.orEmpty(),
             "timestamp" to currentTimeMillis(),
-            "distance" to (currentStation?.stationCurrentStatus?.distanceInMeters?.toString().orEmpty()),
+            "distance" to (currentStation?.stationCurrentStatus?.distanceInMeters?.toString()
+                .orEmpty()),
             "station_id" to (currentStation?.stationId?.toString().orEmpty()),
             "station_name" to currentStation?.stationName.orEmpty(),
             "battery_details" to mapState.value.batteryDetails.toString(),
@@ -770,10 +779,10 @@ class MapViewModel(
         )
     }
 
-    private fun loadBatteryDetails(){
+    private fun loadBatteryDetails() {
         println("Getting Battery Details")
         viewModelScope.launch {
-            val clientId =  mapState.value.userDetails?.clientVehicleId.orZero()
+            val clientId = mapState.value.userDetails?.clientVehicleId.orZero()
             getBatteryDetailsUseCase.invoke(
                 clientVehicleId = clientId
             ).collect(
@@ -801,6 +810,31 @@ class MapViewModel(
         }
     }
 
+    class Factory(
+        private val locationProvider: LocationProvider,
+        private val bookTokenUseCase: BookTokenUseCase,
+        private val getAllStationsUseCase: GetAllStationsUseCase,
+        private val getRouteInfoUseCase: GetRouteInfoUseCase,
+        private val stationOperationStatusUseCase: GetStationOperationStatusUseCase,
+        //  private val loggerApi: LoggerApi,
+        private val prefUtilApi: YumaPrefUtilApi,
+        private val serviceLauncher: ServiceLauncher,
+        // private val analyticsApi: AnalyticsApi,
+        private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            MapViewModel(
+                locationProvider = locationProvider,
+                bookTokenUseCase = bookTokenUseCase,
+                getAllStationsUseCase = getAllStationsUseCase,
+                getRouteInfoUseCase = getRouteInfoUseCase,
+                stationOperationStatusUseCase = stationOperationStatusUseCase,
+                prefUtilApi = prefUtilApi,
+                serviceLauncher = serviceLauncher,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase
+            ) as T
+    }
 
 }
 

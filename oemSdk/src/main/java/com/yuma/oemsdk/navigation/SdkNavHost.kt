@@ -1,58 +1,97 @@
 package com.yuma.oemsdk.navigation
 
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
+import android.app.Activity
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.yuma.oemsdk.onboarding.SilentAuthUiEvent
+import com.yuma.oemsdk.onboarding.SilentAuthViewModel
+import com.yumaoem.core_ui.utils.snackbar.SnackbarController
+import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
+import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.bottom_nav.HomeScreenHost
 import kotlinx.serialization.Serializable
 
-// ── Route Definitions ─────────────────────────────────────────────────────────
-@Serializable internal object SdkRoute {
-    @Serializable object Loading
-    @Serializable object Home
-    @Serializable object AuthFailed
-}
 
-/**
- * Root Compose NavHost for the SDK.
- *
- * Flow:
- *  1. Starts at [SdkRoute.Loading] — initiates silent authentication.
- *  2. On success → navigates to [SdkRoute.Home] (full feature experience).
- *  3. On failure → navigates to [SdkRoute.AuthFailed] with retry/dismiss options.
- *
- * @param onDismiss Called when the user taps "Go Back" on the auth failed screen.
- *                  Typically used by [SdkLaunchActivity] to finish itself.
- */
+@Serializable
+object SilentAuthRoute
+
+
+@Serializable
+object HomeScreenRoute
+
 @Composable
 internal fun SdkNavHost(onDismiss: () -> Unit) {
     val navController = rememberNavController()
-    var authErrorMessage by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    var onboardingStart by remember { mutableStateOf<Any>(SilentAuthRoute) }
+
+//    ObserveAsEvents(
+//        flow = NetworkEventBus.INSTANCE.events
+//    ) {
+//        when (it) {
+//            NetworkApiEvent.REFRESH_TOKEN_EXPIRED -> {
+//                if(navController.currentDestination != SilentAuth){
+//                    onboardingStart = LoginScreen
+//                    navController.navigate(Onboarding){
+//                        yumaPrefUtilApi.logoutUser()
+//                        popUpTo(HomeScreen) { inclusive = true }
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     NavHost(
         navController = navController,
-        startDestination = SdkRoute.Loading
+        startDestination = SilentAuthRoute
     ) {
 
-        // ── 1. Loading / Silent Auth ──────────────────────────────────────────
-        composable<SdkRoute.Loading> {
-            LinearProgressIndicator()
+        composable<SilentAuthRoute> {
+            val viewModel: SilentAuthViewModel = viewModel(
+                factory = com.yuma.oemsdk.YumaSdk.silentAuthViewModelFactory!!
+            )
+            CircularProgressIndicator()
+            LaunchedEffect(viewModel) {
+                viewModel.uiEvent.collect { event ->
+                    when (event) {
+                        is SilentAuthUiEvent.NavigateToHomeScreen -> {
+                            navController.navigate(HomeScreenRoute) {
+                                popUpTo(SilentAuthRoute) { inclusive = true }
+                            }
+                        }
+
+                        is SilentAuthUiEvent.Loading -> {}
+                        is SilentAuthUiEvent.ShowSnackbar -> {
+                            SnackbarController.sendEvent(
+                                event = SnackbarEvent(
+                                    message = event.message,
+                                )
+                            )
+                        }
+                    }
+                }
+            }
         }
 
-        // ── 2. Full Home Experience ───────────────────────────────────────────
-        composable<SdkRoute.Home> {
-           Text("Home")
-        }
 
-        // ── 3. Auth Failed ────────────────────────────────────────────────────
-        composable<SdkRoute.AuthFailed> {
-          Text("Auth Failed")
+        composable<HomeScreenRoute> {
+            HomeScreenHost(
+                onUserLoggedOut = {
+                    onboardingStart = SilentAuthRoute
+                    (context as Activity).finish()
+                }
+            )
         }
     }
 }
+

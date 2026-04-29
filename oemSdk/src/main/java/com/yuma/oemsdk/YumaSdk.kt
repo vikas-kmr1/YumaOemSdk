@@ -8,17 +8,30 @@ import com.yuma.oemsdk.core_network.HttpClientApiImpl
 import com.yuma.oemsdk.onboarding.SilentAuthViewModel
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumacustomer.core_logger.impl.LoggerApiImpl
+import com.yumaoem.core.app_navigation_state.NavigationStateRepository
+import com.yumaoem.core.utils.context.AndroidContextProvider
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.device_info.DeviceInfoProvider
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.corepreference.createDataStore
 import com.yumaoem.corepreference.impl.PreferenceApiImpl
 import com.yumaoem.corepreference.impl.util.YumaPrefUtilImpl
+import com.yumaoem.feature_home.common.notification.ServiceLauncher
+import com.yumaoem.feature_home.data.network.HomeRemoteDataSource
+import com.yumaoem.feature_home.data.network.YuzenRemoteDataSource
+import com.yumaoem.feature_home.data.repository.HomeRepositoryImpl
+import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
+import com.yumaoem.feature_home.domain.usecase.maps.all_station_markers.GetAllStationsUseCase
+import com.yumaoem.feature_home.domain.usecase.maps.route_info.GetRouteInfoUseCase
+import com.yumaoem.feature_home.domain.usecase.maps.station_operation_status.GetStationOperationStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.token_booking.book_token.BookTokenUseCase
+import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewmodel.HomeViewModel
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
+import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapViewModel
 import com.yumaoem.feature_onboarding.data.network.OnboardingRemoteDataSource
 import com.yumaoem.feature_onboarding.data.repository.OnboardingRepositoryImpl
+import com.yumaoem.feature_onboarding.domain.use_case.drop_off.GetDropOffDataUseCase
 import com.yumaoem.feature_onboarding.domain.use_case.verify_otp.SilentAuthUseCase
-import io.ktor.client.plugins.auth.providers.BearerTokens
 import kotlinx.serialization.json.Json
 
 
@@ -84,12 +97,13 @@ object YumaSdk {
     private lateinit var applicationContext: Context
     private var config: YumaSdkConfiguration? = null
 
-    // In-memory auth token state — fed to Ktor bearer plugin
-    @Volatile
-    private var bearerTokens: BearerTokens? = null
 
     // Factory for SilentAuthViewModel
     internal var silentAuthViewModelFactory: SilentAuthViewModel.Factory? = null
+
+    internal lateinit var homeViewModelFactory: HomeViewModel.Factory
+
+    internal lateinit var mapViewModel: MapViewModel.Factory
 
     // ─── Initialization ───────────────────────────────────────────────────────
 
@@ -111,15 +125,13 @@ object YumaSdk {
             if (isInitialized) return
 
             applicationContext = context.applicationContext
-            com.yumaoem.core.utils.context.AndroidContextProvider.context = applicationContext
+            AndroidContextProvider.context = applicationContext
+
             config = sdkConfig
 
-            val baseUrl = when (sdkConfig.environment) {
-                Environment.DEV -> "dev-backend-oem.yumax.app"
-                Environment.PREPROD -> "preprod-backend-oem.yumax.app"
-                Environment.PROD -> "backend-oem.yumax.app"
-            }
+
             val enableLogging = sdkConfig.environment != Environment.PROD
+
 
             // 1. Preferences (DataStore — no 3rd party DI)
             val prefManager = initYumaPrefManager(applicationContext)
@@ -131,31 +143,85 @@ object YumaSdk {
             val networkClient = initYumaNetworkClient(
                 shouldEnableLogging = enableLogging,
                 loggerApi = loggerApi,
-                preferenceUtilApi = prefManager
+                preferenceUtilApi = prefManager,
+                environment = sdkConfig.environment
             )
 
 
             // 3. Location provider
-            val locationProvierr = initYumaLocationProvider(applicationContext)
+            val locationProvider = initYumaLocationProvider(applicationContext)
 
             // 4. Core Location Provider
-            val locationManager = initYumaCoreLocationProvider(applicationContext)
+            val coreLocationProvider = initYumaCoreLocationProvider(applicationContext)
 
             // 5. SilentAuthManager
-            val datasource = OnboardingRemoteDataSource(networkClient, locationManager)
+
             val deviceInfoProvider = DeviceInfoProvider(applicationContext)
+
+            val onboardingDatasource =
+                OnboardingRemoteDataSource(networkClient, coreLocationProvider)
+            val yuzenDataSource = YuzenRemoteDataSource(
+                networkClient,
+                Json { ignoreUnknownKeys = true },
+                coreLocationProvider
+            )
+            val homeDataSource = HomeRemoteDataSource(
+                networkClient,
+                Json { ignoreUnknownKeys = true },
+                coreLocationProvider
+            )
+
+            val navigationStateRepository = NavigationStateRepository()
+            val homeRepository = HomeRepositoryImpl(
+                homeDataSource,
+                yuzenDataSource
+            )
+
+
+
             silentAuthViewModelFactory = SilentAuthViewModel.Factory(
+                navigationStateRepository = navigationStateRepository,
                 preferenceApi = prefManager,
-                dataSource = datasource,
-                silentAuthUseCase = SilentAuthUseCase(
-                    OnboardingRepositoryImpl(datasource)
-                ),
+                dataSource = onboardingDatasource,
+                silentAuthUseCase = SilentAuthUseCase(OnboardingRepositoryImpl(onboardingDatasource)),
+                dropOffDataUseCase = GetDropOffDataUseCase(homeRepository),
                 deviceInfoProvider = deviceInfoProvider
             )
 
-            isInitialized = true
-            Log.d(TAG, "✅ YumaSdk initialized | env=${sdkConfig.environment} | url=$baseUrl")
+            // 6. HomeViewModel
+            homeViewModelFactory = HomeViewModel.Factory(
+                locationProvider = locationProvider,
+                yumaPrefUtil = prefManager,
+                supportDetailsUseCase = com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase(
+                    HomeRepositoryImpl(homeDataSource, yuzenDataSource)
+                ),
+                navigationStateRepository = navigationStateRepository,
+                serviceLauncher = com.yumaoem.feature_home.common.notification.ServiceLauncher(
+                    applicationContext
+                ),
+            )
 
+            // 7. MapViewModel
+            val bookTokenUseCase = BookTokenUseCase(homeRepository)
+            val getAllStationsUseCase: GetAllStationsUseCase = GetAllStationsUseCase(homeRepository)
+            val getRouteInfoUseCase: GetRouteInfoUseCase = GetRouteInfoUseCase(homeRepository)
+            val stationOperationStatusUseCase = GetStationOperationStatusUseCase(homeRepository)
+            val getBatteryDetailsUseCase: GetBatteryDetailsUseCase =
+                GetBatteryDetailsUseCase(homeRepository)
+
+            mapViewModel = MapViewModel.Factory(
+                locationProvider = locationProvider,
+                bookTokenUseCase = bookTokenUseCase,
+                getAllStationsUseCase = getAllStationsUseCase,
+                getRouteInfoUseCase = getRouteInfoUseCase,
+                stationOperationStatusUseCase = stationOperationStatusUseCase,
+                prefUtilApi = prefManager,
+                serviceLauncher = ServiceLauncher(context),
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase
+            )
+
+            isInitialized = true
+            Log.d(TAG, "✅ YumaSdk initialized | env=${sdkConfig.environment}")
         }
     }
 
@@ -184,10 +250,8 @@ object YumaSdk {
     // ─── Session Management ───────────────────────────────────────────────────
 
 
-
     /** Resets the Ktor client and clears all tokens (e.g. on logout or session expiry). */
     fun resetKtorClient() {
-        bearerTokens = null
         Log.d(TAG, "🔄 SDK network client reset.")
     }
 

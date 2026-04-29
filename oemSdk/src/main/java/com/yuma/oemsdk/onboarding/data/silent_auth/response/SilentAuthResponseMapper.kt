@@ -1,6 +1,5 @@
 package com.yumaoem.feature_onboarding.data.dto.verify_otp.response
 
-import com.yumaoem.feature_onboarding.data.dto.verify_otp.request.SilentAuthRequest
 import com.yumaoem.feature_onboarding.domain.model.verify_otp.response.ClientDetails
 import com.yumaoem.feature_onboarding.domain.model.verify_otp.response.CurrentClientCityIds
 import com.yumaoem.feature_onboarding.domain.model.verify_otp.response.Token
