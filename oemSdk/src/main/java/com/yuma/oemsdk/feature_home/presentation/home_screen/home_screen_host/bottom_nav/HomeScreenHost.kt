@@ -49,7 +49,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun HomeScreenHost(
-    onUserLoggedOut: () -> Unit
+    onUserLoggedOut: () -> Unit,
+    exitSdk: () -> Unit
 ) {
     //val yumaPrefUtilApi = koinInject<YumaPrefUtilApi>()
 
@@ -73,9 +74,8 @@ fun HomeScreenHost(
         if (selectedRoute != NavRoute.HOME) {
             selectedRoute = NavRoute.HOME
         } else {
-            closeApp()
+            exitSdk()
         }
-
     }
 
     ObserveGlobalEvents { hideBottomBar = it }

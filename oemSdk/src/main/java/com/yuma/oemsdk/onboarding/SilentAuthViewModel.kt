@@ -43,7 +43,6 @@ data class SilentAuthState(
 
 sealed class SilentAuthUiEvent {
     object NavigateToHomeScreen : SilentAuthUiEvent()
-    object Loading: SilentAuthUiEvent()
     data class ShowSnackbar(val message: String) : SilentAuthUiEvent()
 }
 
@@ -99,7 +98,6 @@ internal class SilentAuthViewModel(
                     state = state.copy(
                         isErrorState = false
                     )
-                    _uiEvent.emit(SilentAuthUiEvent.Loading)
                 },
                 onSuccess = {
                     //Save bearer tokens

@@ -65,7 +65,7 @@ internal class SdkMainActivity : ComponentActivity() {
         setContent {
             YumaAppTheme {
                 SdkNavHost(
-                    onDismiss = { finish() }
+                    onExit = { finish() }
                 )
             }
         }
