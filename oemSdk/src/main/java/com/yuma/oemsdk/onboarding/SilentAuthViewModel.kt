@@ -1,6 +1,5 @@
 package com.yuma.oemsdk.onboarding
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -71,9 +70,18 @@ internal class SilentAuthViewModel(
     )
 
     init {
+        checkLogInStatus()
+    }
+
+
+    fun checkLogInStatus() {
         viewModelScope.launch {
-            //if (!ensureLocationIsEnabled()) return@launch
-            silentAuth()
+            if (preferenceApi.isUserLoggedIn()) {
+                getUserDropOffData()
+            } else {
+                delay(1000)
+                silentAuth()
+            }
         }
     }
 
@@ -261,8 +269,8 @@ internal class SilentAuthViewModel(
                         )
                     },
                     onSuccess = { data ->
-                        dropOffNavigator.navigateToScreen(data = data)
-
+                        dropOffNavigator.navigateToScreen(data)
+                        _uiEvent.emit(SilentAuthUiEvent.NavigateToHomeScreen)
                     },
                     onError = { _, _ ->
                         state = state.copy(

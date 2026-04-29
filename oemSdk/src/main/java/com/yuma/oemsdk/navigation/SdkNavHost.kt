@@ -4,13 +4,16 @@ import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -19,6 +22,9 @@ import androidx.navigation.compose.rememberNavController
 import com.yuma.oemsdk.YumaSdk
 import com.yuma.oemsdk.onboarding.SilentAuthUiEvent
 import com.yuma.oemsdk.onboarding.SilentAuthViewModel
+import com.yumaoem.core_network.impl.util.NetworkApiEvent
+import com.yumaoem.core_network.impl.util.NetworkEventBus
+import com.yumaoem.core_ui.utils.snackbar.ObserveAsEvents
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.bottom_nav.HomeScreenHost
@@ -35,25 +41,22 @@ object HomeScreenRoute
 @Composable
 internal fun SdkNavHost(onExit: () -> Unit) {
     val navController = rememberNavController()
-    val context = LocalContext.current
 
     var onboardingStart by remember { mutableStateOf<Any>(SilentAuthRoute) }
 
-//    ObserveAsEvents(
-//        flow = NetworkEventBus.INSTANCE.events
-//    ) {
-//        when (it) {
-//            NetworkApiEvent.REFRESH_TOKEN_EXPIRED -> {
-//                if(navController.currentDestination != SilentAuth){
-//                    onboardingStart = LoginScreen
-//                    navController.navigate(Onboarding){
-//                        yumaPrefUtilApi.logoutUser()
-//                        popUpTo(HomeScreen) { inclusive = true }
-//                    }
-//                }
-//            }
-//        }
-//    }
+    ObserveAsEvents(
+        flow = NetworkEventBus.INSTANCE.events
+    ) {
+        when (it) {
+            NetworkApiEvent.REFRESH_TOKEN_EXPIRED -> {
+                if (navController.currentDestination != SilentAuthRoute) {
+                    onboardingStart = SilentAuthRoute
+                    YumaSdk.prefManager.logoutUser()
+                    onExit()
+                }
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -84,8 +87,14 @@ internal fun SdkNavHost(onExit: () -> Unit) {
                 }
             }
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator()
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color.LightGray,
+                    trackColor = MaterialTheme.colorScheme.onBackground,
+                )
             }
         }
 
@@ -93,7 +102,6 @@ internal fun SdkNavHost(onExit: () -> Unit) {
             HomeScreenHost(
                 onUserLoggedOut = {
                     onboardingStart = SilentAuthRoute
-                    (context as Activity).finish()
                 },
                 exitSdk = onExit
             )

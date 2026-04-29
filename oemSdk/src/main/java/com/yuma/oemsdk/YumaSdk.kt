@@ -105,6 +105,8 @@ object YumaSdk {
 
     internal lateinit var mapViewModel: MapViewModel.Factory
 
+    internal lateinit var  prefManager: YumaPrefUtilApi
+
     // ─── Initialization ───────────────────────────────────────────────────────
 
     /**
@@ -134,7 +136,7 @@ object YumaSdk {
 
 
             // 1. Preferences (DataStore — no 3rd party DI)
-            val prefManager = initYumaPrefManager(applicationContext)
+            prefManager = initYumaPrefManager(applicationContext)
 
             // 2. Logger (no 3rd party DI)
             val loggerApi = initYumaLogger(enableLogging)
