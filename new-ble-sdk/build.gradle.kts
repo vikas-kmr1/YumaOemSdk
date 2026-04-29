@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    id("maven-publish")
 }
 
 android {
@@ -42,4 +43,26 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     implementation(files("libs/yuma-ble-sdk-v2.6.1.aar"))
+}
+
+android {
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+                groupId = "com.github.vikas-kmr1.YumaOemSdk" // Match root repo logic for JitPack 
+                artifactId = "new-ble-sdk"
+                version = "1.0.1-beta"
+            }
+        }
+    }
 }
