@@ -26,3 +26,4 @@ dependencyResolutionManagement {
 rootProject.name = "YumaOemSdk"
 include(":app")
 include(":oemSdk")
+include(":new-ble-sdk")
