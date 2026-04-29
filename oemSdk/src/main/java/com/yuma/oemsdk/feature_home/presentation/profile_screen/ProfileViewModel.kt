@@ -4,8 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.yumacustomer.core_analytics.api.AnalyticsApi
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core_network.impl.util.collect
@@ -34,9 +34,9 @@ class ProfileViewModel(
     private val logoutUserUseCase: LogoutUserUseCase,
     private val dataSource: HomeRemoteDataSource,
     private val prefUtilApi: YumaPrefUtilApi,
-    private val analyticsApi: AnalyticsApi,
+    //private val analyticsApi: AnalyticsApi,
     private val loggerApi: LoggerApi,
-): ViewModel() {
+) : ViewModel() {
 
     var state by mutableStateOf(ProfileScreenState())
         private set
@@ -50,11 +50,13 @@ class ProfileViewModel(
             state = state.copy(isRefreshing = it)
         },
         onRequest = { nextPage ->
-           getSwapHistoryUseCase.invoke(swapHistoryRequest = SwapHistoryRequest(
-               clientVehicleId = state.user?.clientVehicleId.orZero(),
-               page = nextPage,
-               limit = 10
-           ))
+            getSwapHistoryUseCase.invoke(
+                swapHistoryRequest = SwapHistoryRequest(
+                    clientVehicleId = state.user?.clientVehicleId.orZero(),
+                    page = nextPage,
+                    limit = 10
+                )
+            )
         },
         getNextKey = {
             state.page + 1
@@ -75,7 +77,7 @@ class ProfileViewModel(
         }
     )
 
-    fun onLogout(){
+    fun onLogout() {
         viewModelScope.launch {
             sendUserLogoutEvent()
             val userId: String? = prefUtilApi.getUserData()?.userId
@@ -85,14 +87,14 @@ class ProfileViewModel(
             ).collect(
                 onLoading = {},
                 onSuccess = {
-                    if (userId!=null){
+                    if (userId != null) {
                         dataSource.removeFCMToken(
                             request = RemoveFcmTokenRequestDto(
                                 userId = userId.toInt()
                             )
                         )
                     }
-                    analyticsApi.resetUser()
+                    //analyticsApi.resetUser()
                     _uiEvent.send(ProfileScreenUiEvent.UserLoggedOut)
                 },
                 onError = { errorMessage, _ -> }
@@ -100,7 +102,7 @@ class ProfileViewModel(
         }
     }
 
-    private fun getUserDetails(){
+    private fun getUserDetails() {
         state = state.copy(
             userDetails = UserDetails(
                 fullName = "${state.user?.firstName} ${state.user?.surname}",
@@ -113,15 +115,15 @@ class ProfileViewModel(
         )
     }
 
-     fun toggleBottomSheet(){
-         loggerApi.logDWithTag("ProfileViewModel", "toggleBottomSheet")
+    fun toggleBottomSheet() {
+        loggerApi.logDWithTag("ProfileViewModel", "toggleBottomSheet")
         val bottomSheet = state.isSheetOpen
-         if (bottomSheet.not()){
-             sendProfileScreenQrClickEvent()
-         }
-       state = state.copy(
-           isSheetOpen = !bottomSheet
-       )
+        if (bottomSheet.not()) {
+            sendProfileScreenQrClickEvent()
+        }
+        state = state.copy(
+            isSheetOpen = !bottomSheet
+        )
     }
 
 
@@ -145,9 +147,9 @@ class ProfileViewModel(
         }
     }
 
-   private fun loadBatteryDetails(){
+    private fun loadBatteryDetails() {
         viewModelScope.launch {
-            val clientId =  state.user?.clientVehicleId.orZero()
+            val clientId = state.user?.clientVehicleId.orZero()
             getBatteryDetailsUseCase.invoke(
                 clientVehicleId = clientId
             ).collect(
@@ -163,53 +165,80 @@ class ProfileViewModel(
             )
         }
     }
+
     fun loadNextItems() {
         viewModelScope.launch {
             paginator.loadNextItems()
         }
     }
 
-    fun sendProfileScreenLaunchedEvent(){
+    fun sendProfileScreenLaunchedEvent() {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
-                event = "screen_viewed",
-                values = commonValues + mapOf(
-                    "screen_name" to "profile_screen_viewed"
-                )
-            )
+//            analyticsApi.postEvent(
+//                event = "screen_viewed",
+//                values = commonValues + mapOf(
+//                    "screen_name" to "profile_screen_viewed"
+//                )
+//            )
         }
     }
 
-    fun sendProfileScreenQrClickEvent(){
+    fun sendProfileScreenQrClickEvent() {
         viewModelScope.launch {
             val currentUser = prefUtilApi.getUserData()
-            analyticsApi.postEvent(
-                event = "profile_screen_qr_clicked",
-                values = mapOf(
-                    "user_id" to currentUser?.userId.orEmpty(),
-                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                    "bikeProvider" to state.user?.bikeProvider.orEmpty(),
-                    "bikeNumber" to state.user?.bikeNumber.orEmpty(),
-                )
-            )
+//            analyticsApi.postEvent(
+//                event = "profile_screen_qr_clicked",
+//                values = mapOf(
+//                    "user_id" to currentUser?.userId.orEmpty(),
+//                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+//                    "bikeProvider" to state.user?.bikeProvider.orEmpty(),
+//                    "bikeNumber" to state.user?.bikeNumber.orEmpty(),
+//                )
+//            )
         }
     }
 
-    fun sendUserLogoutEvent(){
+    fun sendUserLogoutEvent() {
         viewModelScope.launch {
             val currentUser = prefUtilApi.getUserData()
-            analyticsApi.postEvent(
-                event = "user_logged_out",
-                values = mapOf(
-                    "user_id" to currentUser?.userId.orEmpty(),
-                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                    "mobile_number" to currentUser?.phone.orEmpty(),
-                    "type" to "manual"
-                )
-            )
+//            analyticsApi.postEvent(
+//                event = "user_logged_out",
+//                values = mapOf(
+//                    "user_id" to currentUser?.userId.orEmpty(),
+//                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+//                    "mobile_number" to currentUser?.phone.orEmpty(),
+//                    "type" to "manual"
+//                )
+//            )
         }
     }
+
+    class Factory(
+        private val getUserDetailsUseCase: GetUserDetailsUseCase,
+        private val getSwapHistoryUseCase: GetSwapHistoryUseCase,
+        private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
+        private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
+        private val logoutUserUseCase: LogoutUserUseCase,
+        private val dataSource: HomeRemoteDataSource,
+        private val prefUtilApi: YumaPrefUtilApi,
+        //private val analyticsApi: AnalyticsApi,
+        private val loggerApi: LoggerApi,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            ProfileViewModel(
+                getUserDetailsUseCase = getUserDetailsUseCase,
+                getSwapHistoryUseCase = getSwapHistoryUseCase,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                logoutUserUseCase = logoutUserUseCase,
+                dataSource = dataSource,
+                prefUtilApi = prefUtilApi,
+                loggerApi = loggerApi,
+                ) as T
+    }
+
 }
 
 sealed class ProfileScreenUiEvent {

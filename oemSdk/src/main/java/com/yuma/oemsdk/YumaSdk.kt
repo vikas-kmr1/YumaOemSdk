@@ -1,5 +1,6 @@
 package com.yuma.oemsdk
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -17,17 +18,23 @@ import com.yumaoem.corepreference.createDataStore
 import com.yumaoem.corepreference.impl.PreferenceApiImpl
 import com.yumaoem.corepreference.impl.util.YumaPrefUtilImpl
 import com.yumaoem.feature_home.common.notification.ServiceLauncher
+import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
 import com.yumaoem.feature_home.data.network.HomeRemoteDataSource
 import com.yumaoem.feature_home.data.network.YuzenRemoteDataSource
 import com.yumaoem.feature_home.data.repository.HomeRepositoryImpl
 import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
+import com.yumaoem.feature_home.domain.usecase.logout_user.LogoutUserUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.all_station_markers.GetAllStationsUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.route_info.GetRouteInfoUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.station_operation_status.GetStationOperationStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.profile_screen.GetSwapHistoryUseCase
+import com.yumaoem.feature_home.domain.usecase.profile_screen.GetUserDetailsUseCase
+import com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.token_booking.book_token.BookTokenUseCase
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewmodel.HomeViewModel
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapViewModel
+import com.yumaoem.feature_home.presentation.profile_screen.ProfileViewModel
 import com.yumaoem.feature_onboarding.data.network.OnboardingRemoteDataSource
 import com.yumaoem.feature_onboarding.data.repository.OnboardingRepositoryImpl
 import com.yumaoem.feature_onboarding.domain.use_case.drop_off.GetDropOffDataUseCase
@@ -106,6 +113,8 @@ object YumaSdk {
     internal lateinit var mapViewModel: MapViewModel.Factory
 
     internal lateinit var  prefManager: YumaPrefUtilApi
+
+    internal lateinit var profileViewModelFactory: ProfileViewModel.Factory
 
     // ─── Initialization ───────────────────────────────────────────────────────
 
@@ -187,18 +196,19 @@ object YumaSdk {
                 dataSource = onboardingDatasource,
                 silentAuthUseCase = SilentAuthUseCase(OnboardingRepositoryImpl(onboardingDatasource)),
                 dropOffDataUseCase = GetDropOffDataUseCase(homeRepository),
-                deviceInfoProvider = deviceInfoProvider
+                deviceInfoProvider = deviceInfoProvider,
+                locationProvider = coreLocationProvider
             )
 
             // 6. HomeViewModel
             homeViewModelFactory = HomeViewModel.Factory(
                 locationProvider = locationProvider,
                 yumaPrefUtil = prefManager,
-                supportDetailsUseCase = com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase(
+                supportDetailsUseCase = GetWhatsappSupprtDetailsUseCase(
                     HomeRepositoryImpl(homeDataSource, yuzenDataSource)
                 ),
                 navigationStateRepository = navigationStateRepository,
-                serviceLauncher = com.yumaoem.feature_home.common.notification.ServiceLauncher(
+                serviceLauncher = ServiceLauncher(
                     applicationContext
                 ),
             )
@@ -222,6 +232,23 @@ object YumaSdk {
                 getBatteryDetailsUseCase = getBatteryDetailsUseCase
             )
 
+            // 8. ProfileViewModel
+            val getUserDetailsUseCase: GetUserDetailsUseCase = GetUserDetailsUseCase(prefManager)
+            val getSwapHistoryUseCase = GetSwapHistoryUseCase(homeRepository)
+            val logoutUserUseCase = LogoutUserUseCase(homeRepository)
+            val commonAnalyticsParamsProvider = CommonAnalyticsParamsProvider(prefManager)
+
+            profileViewModelFactory = ProfileViewModel.Factory(
+                getUserDetailsUseCase = getUserDetailsUseCase,
+                getSwapHistoryUseCase = getSwapHistoryUseCase,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                logoutUserUseCase = logoutUserUseCase,
+                dataSource = homeDataSource,
+                loggerApi = loggerApi,
+                prefUtilApi = prefManager,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+            )
+
             isInitialized = true
             Log.d(TAG, "✅ YumaSdk initialized | env=${sdkConfig.environment}")
         }
@@ -242,7 +269,7 @@ object YumaSdk {
         check(isInitialized) { "YumaSdk not initialized. Call YumaSdk.init() first." }
         val intent = Intent(context, SdkMainActivity::class.java).apply {
             // Ensure new task if launching from non-Activity context
-            if (context !is android.app.Activity) {
+            if (context !is Activity) {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
         }

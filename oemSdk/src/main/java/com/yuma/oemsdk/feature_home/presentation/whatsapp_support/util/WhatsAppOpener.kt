@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.context.PlatformContext
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
@@ -21,15 +22,15 @@ fun openWhatsAppWithMessage() {
     //val preferencesApi: YumaPrefUtilApi = GlobalContext.get().get()
 
     scope.launch {
-//        val supportDetails = preferencesApi.getSupportDetails().firstOrNull()
-//        if (supportDetails == null){
-//            SnackbarController.sendEvent(SnackbarEvent("Getting Support Details"))
-//            return@launch
-//        }
-//
-//        val phoneNumber = "+91${supportDetails.phoneNumber}"
-//        val supportMessage = supportDetails.defaultMessage
-        val url = getUrl("+919560220981","")//(phoneNumber, supportMessage))
+        val supportDetails = YumaSdk.prefManager. getSupportDetails().firstOrNull()
+        if (supportDetails == null){
+            SnackbarController.sendEvent(SnackbarEvent("Getting Support Details"))
+            return@launch
+        }
+
+        val phoneNumber = "+91${supportDetails.phoneNumber}"
+        val supportMessage = supportDetails.defaultMessage
+        val url = getUrl(phoneNumber, supportMessage)
 
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {

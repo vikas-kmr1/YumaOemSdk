@@ -14,6 +14,7 @@ import com.yumaoem.core.model.auth.AuthBearerTokens
 import com.yumaoem.core.model.auth.User
 import com.yumaoem.core.utils.app_utils.getFcmToken
 import com.yumaoem.core.utils.app_utils.isLocationEnabled
+import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.device_info.DeviceInfoProvider
 import com.yumaoem.core.utils.global_events.ShowEnableLocationDialog
 import com.yumaoem.core.utils.global_events.controller.EventController
@@ -51,6 +52,7 @@ internal class SilentAuthViewModel(
     private val silentAuthUseCase: SilentAuthUseCase,
     private val dropOffDataUseCase: GetDropOffDataUseCase,
     private val dataSource: OnboardingRemoteDataSource,
+    private val locationProvider: CoreLocationProvider,
     // private val analyticsApi: AnalyticsApi,
     private val deviceInfoProvider: DeviceInfoProvider,
 ) : ViewModel() {
@@ -260,6 +262,8 @@ internal class SilentAuthViewModel(
 
     private fun getUserDropOffData() {
         viewModelScope.launch {
+            locationProvider.startLocationUpdates()
+
             val clientUserId = preferenceApi.getUserData()?.clientUserId
             clientUserId?.let {
                 dropOffDataUseCase.invoke(it).collect(
@@ -292,6 +296,7 @@ internal class SilentAuthViewModel(
         private val dropOffDataUseCase: GetDropOffDataUseCase,
         private val dataSource: OnboardingRemoteDataSource,
         //private val analyticsApi: AnalyticsApi,
+        private val locationProvider: CoreLocationProvider,
         private val deviceInfoProvider: DeviceInfoProvider,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -303,6 +308,7 @@ internal class SilentAuthViewModel(
                 dropOffDataUseCase = dropOffDataUseCase,
                 dataSource = dataSource,
                 // analyticsApi = analyticsApi,
+                locationProvider = locationProvider,
                 deviceInfoProvider = deviceInfoProvider,
             ) as T
     }

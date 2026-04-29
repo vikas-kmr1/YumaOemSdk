@@ -19,13 +19,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -41,22 +37,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.noRippleDebounceClickable
-
 import com.yumaoem.core_ui.components.Yuma_elevated_card.YumaElevatedCard2
-
 import com.yumaoem.core_ui.theme.YumaAppTheme
 import com.yumaoem.core_ui.theme.color.Colors
 import com.yumaoem.core_ui.theme.color.LocalColors
 import com.yumaoem.core_ui.theme.dimension.LocalDimensions
 import com.yumaoem.core_ui.theme.typography.LocalTypography
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
+import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.feature_home.domain.model.profile.UserDetails
 import com.yumaoem.feature_home.domain.model.profile.swap_history.SwapsItem
 import com.yumaoem.feature_home.domain.model.token_flow.battery_details.BatteryDetails
@@ -64,58 +60,60 @@ import com.yumaoem.feature_home.presentation.profile_screen.ProfileScreenState
 import com.yumaoem.feature_home.presentation.profile_screen.ProfileScreenUiEvent
 import com.yumaoem.feature_home.presentation.profile_screen.ProfileViewModel
 import kotlinx.coroutines.launch
-
 import qrgenerator.qrkitpainter.rememberQrKitPainter
 
 @Composable
 fun ProfileScreenRoot(
     onLogoutClick: () -> Unit,
-    isProfileTab:Boolean,
+    isProfileTab: Boolean,
 ) {
-    //val viewModel = koinViewModel<ProfileViewModel>()
+    val viewModel: ProfileViewModel = viewModel(
+        factory = YumaSdk.profileViewModelFactory
+    )
 
-//    val state = viewModel.state
-//    val userDetails = state.userDetails
-//
-//    LaunchedEffect(isProfileTab) {
-//        if (isProfileTab) {
-//          viewModel.isProfileTab()
-//        }
-//    }
-//
-//    if (userDetails != null && isProfileTab) {
-//        SwapHistoryScreen(
-//            state,
-//            loadNextItems = {
-//                viewModel.loadNextItems()
-//            },
-//            onLogoutClick = {
-//                viewModel.onLogout()
-//            },
-//            toggleBottomSheet = {
-//                viewModel.toggleBottomSheet()
-//            }
-//        )
-//    }
-//
-//    LaunchedEffect(Unit){
-//        viewModel.sendProfileScreenLaunchedEvent()
-//    }
-//
-//    LaunchedEffect(Unit) {
-//        viewModel.uiEvent.collect { event ->
-//            when (event) {
-//                is ProfileScreenUiEvent.ShowError -> {
-//                    SnackbarController.sendEvent(
-//                        SnackbarEvent(message = event.message)
-//                    )
-//                }
-//                ProfileScreenUiEvent.UserLoggedOut -> {
-//                    onLogoutClick()
-//                }
-//            }
-//        }
-//    }
+    val state = viewModel.state
+    val userDetails = state.userDetails
+
+    LaunchedEffect(isProfileTab) {
+        if (isProfileTab) {
+            viewModel.isProfileTab()
+        }
+    }
+
+    if (userDetails != null && isProfileTab) {
+        SwapHistoryScreen(
+            state,
+            loadNextItems = {
+                viewModel.loadNextItems()
+            },
+            onLogoutClick = {
+                viewModel.onLogout()
+            },
+            toggleBottomSheet = {
+                viewModel.toggleBottomSheet()
+            }
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.sendProfileScreenLaunchedEvent()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is ProfileScreenUiEvent.ShowError -> {
+                    SnackbarController.sendEvent(
+                        SnackbarEvent(message = event.message)
+                    )
+                }
+
+                ProfileScreenUiEvent.UserLoggedOut -> {
+                    onLogoutClick()
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -375,7 +373,6 @@ fun TokenQRCodeView(
 }
 
 
-
 @Composable
 fun SwapHistoryHeader() {
     Text(
@@ -532,10 +529,10 @@ private fun PreviewSwapHistoryScreen_WithData() {
 
     val dummySwaps = listOf(
         UiSwapItem.DateHeader("Nov 9, 2025"),
-        UiSwapItem.SwapItem(SwapsItem("09:15 AM", "4m 23s",null)),
-        UiSwapItem.SwapItem(SwapsItem("07:40 PM", "5m 08s",null)),
+        UiSwapItem.SwapItem(SwapsItem("09:15 AM", "4m 23s", null)),
+        UiSwapItem.SwapItem(SwapsItem("07:40 PM", "5m 08s", null)),
         UiSwapItem.DateHeader("Nov 8, 2025"),
-        UiSwapItem.SwapItem(SwapsItem("01:30 PM", "3m 42s",null))
+        UiSwapItem.SwapItem(SwapsItem("01:30 PM", "3m 42s", null))
     )
 
     val dummyState = ProfileScreenState(
@@ -543,8 +540,8 @@ private fun PreviewSwapHistoryScreen_WithData() {
         swapHistory = dummySwaps,
         isSheetOpen = false,
         batteryDetails = listOf(
-            BatteryDetails(1234,"23412341"),
-            BatteryDetails(132,"234324")
+            BatteryDetails(1234, "23412341"),
+            BatteryDetails(132, "234324")
         )
     )
 

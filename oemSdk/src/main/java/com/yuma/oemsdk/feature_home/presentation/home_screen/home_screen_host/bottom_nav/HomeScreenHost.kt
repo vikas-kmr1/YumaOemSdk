@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.app_utils.closeApp
 import com.yumaoem.core.utils.global_events.HideBottomBar
 import com.yumaoem.core.utils.global_events.ShowBottomBar
@@ -61,9 +62,9 @@ fun HomeScreenHost(
     var selectedRoute by rememberSaveable { mutableStateOf(NavRoute.HOME) }
 
     LaunchedEffect(Unit) {
-//        yumaPrefUtilApi.getB2cStatus().collect { value ->
-//            isB2CCustomer = value
-//        }
+        YumaSdk.prefManager.getB2cStatus().collect { value ->
+            isB2CCustomer = value
+        }
     }
 
     LaunchedEffect(isB2CCustomer) {
