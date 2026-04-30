@@ -7,11 +7,9 @@ import android.util.Log
 import com.yuma.oemsdk.YumaSdk.init
 import com.yuma.oemsdk.core_network.HttpClientApiImpl
 import com.yuma.oemsdk.onboarding.SilentAuthViewModel
-import com.yumacustomer.core_analytics.api.AnalyticsApi
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumacustomer.core_logger.impl.LoggerApiImpl
 import com.yumacustomer.new_ble_sdk.api.YumaBleSDK
-import com.yumacustomer.new_ble_sdk.data.CommonSessionConfig
 import com.yumaoem.core.app_navigation_state.NavigationStateRepository
 import com.yumaoem.core.utils.context.AndroidContextProvider
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
@@ -27,7 +25,6 @@ import com.yumaoem.feature_home.data.network.HomeRemoteDataSource
 import com.yumaoem.feature_home.data.network.YuzenRemoteDataSource
 import com.yumaoem.feature_home.data.repository.HomeRepositoryImpl
 import com.yumaoem.feature_home.data.repository.YumaBleRepositoryImpl
-import com.yumaoem.feature_home.domain.repository.YumaBleRepository
 import com.yumaoem.feature_home.domain.usecase.auto_dialer.AutoDialerRequestUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.CleanupBleSessionUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.InitializeBleSessionUseCase
@@ -59,6 +56,7 @@ import com.yumaoem.feature_onboarding.domain.use_case.drop_off.GetDropOffDataUse
 import com.yumaoem.feature_onboarding.domain.use_case.verify_otp.SilentAuthUseCase
 import kotlinx.serialization.json.Json
 
+internal const val emptyString = ""
 
 enum class Environment {
     DEV, PREPROD, PROD
@@ -71,14 +69,15 @@ enum class Environment {
  * @property mapApiKey  The Google Maps API key used internally by the SDK's map screens.
  * @property environment The target backend environment. Defaults to [Environment.PROD].
  */
-class YumaSdkConfiguration constructor(
+
+class YumaSdkConfiguration(
     val clientKey: String,
     val mapApiKey: String,
     val environment: Environment
 ) {
     class Builder {
-        private var clientKey: String = ""
-        private var mapApiKey: String = ""
+        private var clientKey: String = emptyString
+        private var mapApiKey: String = emptyString
         private var environment: Environment = Environment.PROD
 
         fun setClientKey(clientKey: String) = apply { this.clientKey = clientKey }
@@ -95,24 +94,9 @@ class YumaSdkConfiguration constructor(
 
 
 /**
+ * Singleton @YumaSdk class.
  * Main entry point for the Yuma OEM SDK.
- *
- * ## Usage
- * ```kotlin
- * // In your Application class:
- * YumaSdk.init(
- *     context = this,
- *     sdkConfig = YumaSdkConfiguration.Builder()
- *         .setClientKey("YOUR_CLIENT_KEY")
- *         .setMapApiKey("YOUR_MAP_API_KEY")
- *         .setEnvironment(Environment.PROD)
- *         .build()
- * )
- *
- * // In your Activity / Fragment:
- * YumaSdk.launchHome(context)
- * ```
- */
+ **/
 object YumaSdk {
     private const val TAG = "YumaSdk"
 
@@ -122,24 +106,20 @@ object YumaSdk {
     private lateinit var applicationContext: Context
     private lateinit var config: YumaSdkConfiguration
 
-
-    // Factory for ViewModels
+    // View Model Factories
     internal lateinit var silentAuthViewModelFactory: SilentAuthViewModel.Factory
-
     internal lateinit var homeViewModelFactory: HomeViewModel.Factory
-
-    internal lateinit var mapViewModel: MapViewModel.Factory
-
-    internal lateinit var  prefManager: YumaPrefUtilApi
-
+    internal lateinit var mapViewModelFactory: MapViewModel.Factory
     internal lateinit var profileViewModelFactory: ProfileViewModel.Factory
+    internal lateinit var diySwapInProgressViewModelFactory: DiySwapInProgressViewModel.Factory
 
-    internal lateinit var diySwapInProgressViewModel: DiySwapInProgressViewModel.Factory
+    // Core Services
+    internal lateinit var prefManager: YumaPrefUtilApi
+    private val jsonConfig = Json { ignoreUnknownKeys = true }
 
     // ─── Initialization ───────────────────────────────────────────────────────
-
     /**
-     * Initializes the SDK. Must be called in your Application class before any
+     * Initializes the SDK. Must be called in the Client's Application class before any
      * other SDK method.
      *
      * @param context   Application context.
@@ -154,160 +134,74 @@ object YumaSdk {
 
         synchronized(this) {
             if (isInitialized) return
+            val enableLogging = sdkConfig.environment != Environment.PROD
 
             applicationContext = context.applicationContext
             AndroidContextProvider.context = applicationContext
-
             config = sdkConfig
 
-
-            val enableLogging = sdkConfig.environment != Environment.PROD
-
-
-            // 1. Preferences (DataStore — no 3rd party DI)
+            // 1. Core Services Setup
             prefManager = initYumaPrefManager(applicationContext)
-
-            // 2. Logger (no 3rd party DI)
-            val loggerApi = initYumaLogger(enableLogging)
-
-            // 3. Network client (Ktor + native Android engine — no OkHttp)
-            val networkClient = initYumaNetworkClient(
-                shouldEnableLogging = enableLogging,
-                loggerApi = loggerApi,
-                preferenceUtilApi = prefManager,
-                environment = sdkConfig.environment
-            )
-
-
-            // 3. Location provider
-            val locationProvider = initYumaLocationProvider(applicationContext)
-
-            // 4. Core Location Provider
-            val coreLocationProvider = initYumaCoreLocationProvider(applicationContext)
-
-            // 5. SilentAuthManager
-
+            val loggerApi = LoggerApiImpl(enableLogging)
+            val networkClient =
+                initYumaNetworkClient(enableLogging, loggerApi, prefManager, sdkConfig.environment)
+            val locationProvider = LocationProvider(applicationContext)
+            val coreLocationProvider = CoreLocationProvider(applicationContext)
             val deviceInfoProvider = DeviceInfoProvider(applicationContext)
+            val serviceLauncher = ServiceLauncher(applicationContext)
+            val navigationStateRepository = NavigationStateRepository()
 
+            // 2. Data Sources & Repositories Setup
             val onboardingDatasource =
                 OnboardingRemoteDataSource(networkClient, coreLocationProvider)
-            val yuzenDataSource = YuzenRemoteDataSource(
-                networkClient,
-                Json { ignoreUnknownKeys = true },
-                coreLocationProvider
-            )
-            val homeDataSource = HomeRemoteDataSource(
-                networkClient,
-                Json { ignoreUnknownKeys = true },
-                coreLocationProvider
-            )
+            val yuzenDataSource =
+                YuzenRemoteDataSource(networkClient, jsonConfig, coreLocationProvider)
+            val homeDataSource =
+                HomeRemoteDataSource(networkClient, jsonConfig, coreLocationProvider)
+            val homeRepository = HomeRepositoryImpl(homeDataSource, yuzenDataSource)
 
-            val navigationStateRepository = NavigationStateRepository()
-            val homeRepository = HomeRepositoryImpl(
-                homeDataSource,
-                yuzenDataSource
-            )
-
-
-
-            silentAuthViewModelFactory = SilentAuthViewModel.Factory(
-                navigationStateRepository = navigationStateRepository,
-                preferenceApi = prefManager,
-                dataSource = onboardingDatasource,
-                silentAuthUseCase = SilentAuthUseCase(OnboardingRepositoryImpl(onboardingDatasource)),
-                dropOffDataUseCase = GetDropOffDataUseCase(homeRepository),
-                deviceInfoProvider = deviceInfoProvider,
-                locationProvider = coreLocationProvider
-            )
-
-            // 6. HomeViewModel
-            homeViewModelFactory = HomeViewModel.Factory(
-                locationProvider = locationProvider,
-                yumaPrefUtil = prefManager,
-                supportDetailsUseCase = GetWhatsappSupprtDetailsUseCase(
-                    HomeRepositoryImpl(homeDataSource, yuzenDataSource)
-                ),
-                navigationStateRepository = navigationStateRepository,
-                serviceLauncher = ServiceLauncher(
-                    applicationContext
-                ),
-            )
-
-            // 7. MapViewModel
-            val bookTokenUseCase = BookTokenUseCase(homeRepository)
-            val getAllStationsUseCase: GetAllStationsUseCase = GetAllStationsUseCase(homeRepository)
-            val getRouteInfoUseCase: GetRouteInfoUseCase = GetRouteInfoUseCase(homeRepository)
-            val stationOperationStatusUseCase = GetStationOperationStatusUseCase(homeRepository)
-            val getBatteryDetailsUseCase: GetBatteryDetailsUseCase =
-                GetBatteryDetailsUseCase(homeRepository)
-
-            mapViewModel = MapViewModel.Factory(
-                locationProvider = locationProvider,
-                bookTokenUseCase = bookTokenUseCase,
-                getAllStationsUseCase = getAllStationsUseCase,
-                getRouteInfoUseCase = getRouteInfoUseCase,
-                stationOperationStatusUseCase = stationOperationStatusUseCase,
-                prefUtilApi = prefManager,
-                serviceLauncher = ServiceLauncher(context),
-                getBatteryDetailsUseCase = getBatteryDetailsUseCase
-            )
-
-            // 8. ProfileViewModel
-            val getUserDetailsUseCase: GetUserDetailsUseCase = GetUserDetailsUseCase(prefManager)
-            val getSwapHistoryUseCase = GetSwapHistoryUseCase(homeRepository)
-            val logoutUserUseCase = LogoutUserUseCase(homeRepository)
+            // 3. Shared Use Cases
+            val getBatteryDetailsUseCase = GetBatteryDetailsUseCase(homeRepository)
+            val getUserDetailsUseCase = GetUserDetailsUseCase(prefManager)
+            val autoDialerRequestUseCase = AutoDialerRequestUseCase(homeRepository)
             val commonAnalyticsParamsProvider = CommonAnalyticsParamsProvider(prefManager)
 
-            profileViewModelFactory = ProfileViewModel.Factory(
-                getUserDetailsUseCase = getUserDetailsUseCase,
-                getSwapHistoryUseCase = getSwapHistoryUseCase,
-                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
-                logoutUserUseCase = logoutUserUseCase,
-                dataSource = homeDataSource,
-                loggerApi = loggerApi,
-                prefUtilApi = prefManager,
-                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+            // 4. Initialize ViewModel Factories
+            silentAuthViewModelFactory = buildSilentAuthViewModelFactory(
+                navigationStateRepository,
+                onboardingDatasource,
+                homeRepository,
+                deviceInfoProvider,
+                coreLocationProvider
             )
 
-            // 9. DiySwapInProgressViewModel
-            val yumaBleSDK: YumaBleSDK = YumaBleSDK(
-                context,
-                sdkConfig.environment.name,
+            homeViewModelFactory = buildHomeViewModelFactory(
+                locationProvider, homeRepository, navigationStateRepository, serviceLauncher
             )
-           val yumaBleRepository: YumaBleRepository = YumaBleRepositoryImpl(yumaBleSDK)
-            val initializeBleSessionUseCase = InitializeBleSessionUseCase(yumaBleRepository)
-            val startSwapUseCase: StartSwapUseCase = StartSwapUseCase(yumaBleRepository)
-            val swapStatusUseCase: SwapStatusUseCase = SwapStatusUseCase(yumaBleRepository)
-            val submitSwapResultUseCase: SubmitSwapResultUseCase = SubmitSwapResultUseCase(yumaBleRepository)
-            val cleanupBleSessionUseCase: CleanupBleSessionUseCase = CleanupBleSessionUseCase(yumaBleRepository)
-            val observeResponses: ObserveBleResponsesUseCase = ObserveBleResponsesUseCase(yumaBleRepository)
-            val commonSessionConfigFactory: CommonSessionConfigFactory = CommonSessionConfigFactory(prefManager,coreLocationProvider)
-            val getTokenStatusUseCase: GetTokenStatusUseCase = GetTokenStatusUseCase(homeRepository)
-            val autoDialerRequestUseCase: AutoDialerRequestUseCase = AutoDialerRequestUseCase(homeRepository)
-            val submitChargedBatteryQrUseCase: SubmitChargedBatteryQrUseCase = SubmitChargedBatteryQrUseCase(yumaBleRepository)
-            val smartSwapSubmitUseCase: SmartSwapSubmitUseCase = SmartSwapSubmitUseCase(yumaBleRepository)
-            val customerSupportCallInteractor: CustomerSupportCallInteractor = CustomerSupportCallInteractor(prefManager,autoDialerRequestUseCase)
 
+            mapViewModelFactory = buildMapViewModelFactory(
+                locationProvider, homeRepository, serviceLauncher, getBatteryDetailsUseCase
+            )
 
-            diySwapInProgressViewModel = DiySwapInProgressViewModel.Factory(
-                initializeBleSessionUseCase = initializeBleSessionUseCase,
-                startSwapUseCase = startSwapUseCase,
-                swapStatusUseCase = swapStatusUseCase,
-                submitSwapResultUseCase = submitSwapResultUseCase,
-                cleanupBleSessionUseCase = cleanupBleSessionUseCase,
-                observeResponses = observeResponses,
-                getTokenStatusUseCase = getTokenStatusUseCase,
-                autoDialerRequestUseCase = autoDialerRequestUseCase,
-                submitChargedBatteryQrUseCase = submitChargedBatteryQrUseCase,
-                smartSwapSubmitUseCase = smartSwapSubmitUseCase,
-                getUserDetailsUseCase = getUserDetailsUseCase,
-                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
-                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
-                loggerApi = loggerApi,
-                prefsApi = prefManager,
-                customerSupportCallInteractor = customerSupportCallInteractor,
-                commonSessionConfigFactory = commonSessionConfigFactory,
-                json =   Json { ignoreUnknownKeys = true },
+            profileViewModelFactory = buildProfileViewModelFactory(
+                getUserDetailsUseCase,
+                getBatteryDetailsUseCase,
+                homeRepository,
+                homeDataSource,
+                loggerApi,
+                commonAnalyticsParamsProvider
+            )
+
+            diySwapInProgressViewModelFactory = buildDiySwapViewModelFactory(
+                applicationContext,
+                sdkConfig.environment,
+                homeRepository,
+                coreLocationProvider,
+                getUserDetailsUseCase,
+                getBatteryDetailsUseCase,
+                autoDialerRequestUseCase,
+                commonAnalyticsParamsProvider,
+                loggerApi
             )
 
             isInitialized = true
@@ -315,7 +209,8 @@ object YumaSdk {
         }
     }
 
-    // ─── Launch ───────────────────────────────────────────────────────────────
+
+// ─── Launch ───────────────────────────────────────────────────────────────
     /**
      * Launches the SDK's full UI experience.
      *
@@ -325,6 +220,7 @@ object YumaSdk {
      * @param context Any Android context (Activity, Application, etc.)
      * @throws IllegalStateException if [init] has not been called.
      */
+
     @JvmStatic
     fun launchSdk(context: Context) {
         check(isInitialized) { "YumaSdk not initialized. Call YumaSdk.init() first." }
@@ -337,16 +233,8 @@ object YumaSdk {
         context.startActivity(intent)
     }
 
-    // ─── Session Management ───────────────────────────────────────────────────
-
-
-    /** Resets the Ktor client and clears all tokens (e.g. on logout or session expiry). */
-    fun resetKtorClient() {
-        Log.d(TAG, "🔄 SDK network client reset.")
-    }
 
     // ─── Accessors ────────────────────────────────────────────────────────────
-
     /** Returns true if [init] has been called. */
     fun isInitialized(): Boolean = isInitialized
 
@@ -359,12 +247,124 @@ object YumaSdk {
      */
     fun getConfig(): YumaSdkConfiguration {
         check(isInitialized) { "YumaSdk is not initialized. Call YumaSdk.init() first." }
-        return config!!
+        return config
+    }
+
+    // ─── Factory Builders ─────────────────────────────────────────────────────
+    private fun buildSilentAuthViewModelFactory(
+        navigationStateRepository: NavigationStateRepository,
+        onboardingDatasource: OnboardingRemoteDataSource,
+        homeRepository: HomeRepositoryImpl,
+        deviceInfoProvider: DeviceInfoProvider,
+        coreLocationProvider: CoreLocationProvider
+    ): SilentAuthViewModel.Factory {
+        return SilentAuthViewModel.Factory(
+            navigationStateRepository = navigationStateRepository,
+            preferenceApi = prefManager,
+            dataSource = onboardingDatasource,
+            silentAuthUseCase = SilentAuthUseCase(OnboardingRepositoryImpl(onboardingDatasource)),
+            dropOffDataUseCase = GetDropOffDataUseCase(homeRepository),
+            deviceInfoProvider = deviceInfoProvider,
+            locationProvider = coreLocationProvider
+        )
+    }
+
+    private fun buildHomeViewModelFactory(
+        locationProvider: LocationProvider,
+        homeRepository: HomeRepositoryImpl,
+        navigationStateRepository: NavigationStateRepository,
+        serviceLauncher: ServiceLauncher
+    ): HomeViewModel.Factory {
+        return HomeViewModel.Factory(
+            locationProvider = locationProvider,
+            yumaPrefUtil = prefManager,
+            supportDetailsUseCase = GetWhatsappSupprtDetailsUseCase(homeRepository),
+            navigationStateRepository = navigationStateRepository,
+            serviceLauncher = serviceLauncher
+        )
+    }
+
+    private fun buildMapViewModelFactory(
+        locationProvider: LocationProvider,
+        homeRepository: HomeRepositoryImpl,
+        serviceLauncher: ServiceLauncher,
+        getBatteryDetailsUseCase: GetBatteryDetailsUseCase
+    ): MapViewModel.Factory {
+        return MapViewModel.Factory(
+            locationProvider = locationProvider,
+            bookTokenUseCase = BookTokenUseCase(homeRepository),
+            getAllStationsUseCase = GetAllStationsUseCase(homeRepository),
+            getRouteInfoUseCase = GetRouteInfoUseCase(homeRepository),
+            stationOperationStatusUseCase = GetStationOperationStatusUseCase(homeRepository),
+            prefUtilApi = prefManager,
+            serviceLauncher = serviceLauncher,
+            getBatteryDetailsUseCase = getBatteryDetailsUseCase
+        )
+    }
+
+    private fun buildProfileViewModelFactory(
+        getUserDetailsUseCase: GetUserDetailsUseCase,
+        getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
+        homeRepository: HomeRepositoryImpl,
+        homeDataSource: HomeRemoteDataSource,
+        loggerApi: LoggerApi,
+        analyticsParamsProvider: CommonAnalyticsParamsProvider
+    ): ProfileViewModel.Factory {
+        return ProfileViewModel.Factory(
+            getUserDetailsUseCase = getUserDetailsUseCase,
+            getSwapHistoryUseCase = GetSwapHistoryUseCase(homeRepository),
+            getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+            logoutUserUseCase = LogoutUserUseCase(homeRepository),
+            dataSource = homeDataSource,
+            loggerApi = loggerApi,
+            prefUtilApi = prefManager,
+            commonAnalyticsParamsProvider = analyticsParamsProvider
+        )
+    }
+
+    private fun buildDiySwapViewModelFactory(
+        context: Context,
+        environment: Environment,
+        homeRepository: HomeRepositoryImpl,
+        coreLocationProvider: CoreLocationProvider,
+        getUserDetailsUseCase: GetUserDetailsUseCase,
+        getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
+        autoDialerRequestUseCase: AutoDialerRequestUseCase,
+        analyticsParamsProvider: CommonAnalyticsParamsProvider,
+        loggerApi: LoggerApi
+    ): DiySwapInProgressViewModel.Factory {
+        val yumaBleSDK = YumaBleSDK(context, environment.name)
+        val yumaBleRepository = YumaBleRepositoryImpl(yumaBleSDK)
+        return DiySwapInProgressViewModel.Factory(
+            initializeBleSessionUseCase = InitializeBleSessionUseCase(yumaBleRepository),
+            startSwapUseCase = StartSwapUseCase(yumaBleRepository),
+            swapStatusUseCase = SwapStatusUseCase(yumaBleRepository),
+            submitSwapResultUseCase = SubmitSwapResultUseCase(yumaBleRepository),
+            cleanupBleSessionUseCase = CleanupBleSessionUseCase(yumaBleRepository),
+            observeResponses = ObserveBleResponsesUseCase(yumaBleRepository),
+            getTokenStatusUseCase = GetTokenStatusUseCase(homeRepository),
+            autoDialerRequestUseCase = autoDialerRequestUseCase,
+            submitChargedBatteryQrUseCase = SubmitChargedBatteryQrUseCase(yumaBleRepository),
+            smartSwapSubmitUseCase = SmartSwapSubmitUseCase(yumaBleRepository),
+            getUserDetailsUseCase = getUserDetailsUseCase,
+            getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+            commonAnalyticsParamsProvider = analyticsParamsProvider,
+            loggerApi = loggerApi,
+            prefsApi = prefManager,
+            customerSupportCallInteractor = CustomerSupportCallInteractor(
+                prefManager,
+                autoDialerRequestUseCase
+            ),
+            commonSessionConfigFactory = CommonSessionConfigFactory(
+                prefManager,
+                coreLocationProvider
+            ),
+            json = jsonConfig
+        )
     }
 
 
-    /* ———————————————————————————————————init-core-services——————————————————————————————————————————————*/
-
+    // ─── Core Services Initializers ───────────────────────────────────────────
     private fun initYumaNetworkClient(
         shouldEnableLogging: Boolean,
         loggerApi: LoggerApi,
@@ -388,21 +388,9 @@ object YumaSdk {
         )
     }
 
-    private fun initYumaLogger(shouldEnableLogging: Boolean): LoggerApi =
-        LoggerApiImpl(shouldEnableLogging)
-
     private fun initYumaPrefManager(context: Context): YumaPrefUtilApi {
-        val prefrenceApi = PreferenceApiImpl(
-            createDataStore(context = context)
-        )
-        return YumaPrefUtilImpl(prefrenceApi)
+        return YumaPrefUtilImpl(PreferenceApiImpl(createDataStore(context)))
     }
-
-    private fun initYumaLocationProvider(context: Context): LocationProvider =
-        LocationProvider(context)
-
-    private fun initYumaCoreLocationProvider(context: Context): CoreLocationProvider =
-        CoreLocationProvider(context)
 
 //    private fun initYumaJitsuAnlatyticApi(): AnalyticsApi {
 //        val segmentAnalytics = SegmentAnalytics()
@@ -410,4 +398,6 @@ object YumaSdk {
 //
 //        )
 //    }
+
 }
+

@@ -74,8 +74,6 @@ internal class SdkMainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         // Stop location updates when the SDK activity is closed
-
-
     }
 
     private fun requestLocationPermissionsIfNeeded() {

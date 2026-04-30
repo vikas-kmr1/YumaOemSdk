@@ -164,7 +164,7 @@ fun MapScreenContent(
             .fillMaxSize()
     ) {
         val viewModel: MapViewModel = viewModel(
-            factory = YumaSdk.mapViewModel
+            factory = YumaSdk.mapViewModelFactory
         )
         val mapState by viewModel.mapState.collectAsState()
 

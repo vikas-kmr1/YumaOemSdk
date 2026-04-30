@@ -78,7 +78,7 @@ fun DiySwapInProgressScreenRoot(
     isHomeTab: Boolean
 ) {
     val viewModel: DiySwapInProgressViewModel =
-        viewModel(factory = YumaSdk.diySwapInProgressViewModel)
+        viewModel(factory = YumaSdk.diySwapInProgressViewModelFactory)
     val state by viewModel.state.collectAsState()
     val isMultiBatteryFlow: State<Boolean> = remember {
         derivedStateOf {

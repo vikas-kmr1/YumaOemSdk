@@ -26,6 +26,7 @@ moko = "0.19.1"
 lottie = "6.7.1"
 kermit = "2.0.4"
 firebaseBom = "33.13.0"
+googleServices = "4.4.2"
 desugar-jdk-libs = "2.1.5"
 ui = "1.11.0"
 
@@ -85,6 +86,12 @@ kotlinx-datetime-v061 = { module = "org.jetbrains.kotlinx:kotlinx-datetime", ver
 ## Coroutine
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 
+##Firebase
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+
+google-services = { module = "com.google.gms:google-services", version.ref = "googleServices" }
 
 #moko
 moko-permissions = { module = "dev.icerock.moko:permissions-android", version.ref = "moko" }
