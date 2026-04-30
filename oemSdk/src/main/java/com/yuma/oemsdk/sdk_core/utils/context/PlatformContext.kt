@@ -3,7 +3,7 @@ package com.yumaoem.core.utils.context
 import android.content.Context
 
 object PlatformContext {
-    fun getApplicationContext(): Any? {
+    fun getApplicationContext(): Context? {
         return AndroidContextProvider.context
     }
 }

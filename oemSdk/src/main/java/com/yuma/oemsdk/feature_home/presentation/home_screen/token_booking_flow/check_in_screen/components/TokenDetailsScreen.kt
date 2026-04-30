@@ -54,6 +54,7 @@ import com.yumaoem.feature_home.presentation.home_screen.maps_screen.ChargingSta
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.station_states.operational_station.OpenStationStateChip
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.station_states.station_info_bottom_sheet_common_components.GoogleMapLogoIcon
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.LatLong
+import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsScreenEvent
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsScreenUiEvent
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsViewModel
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.components.diy_check_in_screen.DiyCheckInScreen
@@ -123,36 +124,36 @@ fun BookedTokenDetailsScreenRoot(
     )
 
     if (isHomeTab){
-//        BookedTokenDetailsScreen(
-//            tokenNumber = state.bookedTokenDetails?.tokenNumber.orEmpty(),
-//            tokenExpiryTime = state.expiryTime,
-//            isCheckInProgress = state.isCheckInButtonLoading,
-//            station = state.bookedTokenDetails?.bookingStation,
-//            dialogState = state.dialogState,
-//            isDiySwap = state.idDiySwap,
-//            onDismissDialog = {
-//                viewModel.onEvent(TokenDetailsScreenEvent.DismissDialog)
-//            },
-//            onBookingExpiryTryAgainClicked = {
-//                viewModel.onEvent(TokenDetailsScreenEvent.BookingExpiryTryAgainClicked)
-//                onBookingCancelled()
-//            },
-//            onCancelBookingClicked = {
-//                viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingClicked)
-//            },
-//            onCancelBookingConfirmed = {
-//                viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingConfirmed)
-//            },
-//            onCheckInAtStationClicked = {
-//                viewModel.onEvent(TokenDetailsScreenEvent.CheckInAtStationClicked)
-//            },
-//            onGetDirectionsClicked = {
-//                viewModel.onEvent(TokenDetailsScreenEvent.GetDirectionsClicked)
-//            },
-//            onRetryBeaconSearchClicked = {
-//                viewModel.onEvent(TokenDetailsScreenEvent.NoBeaconFoundRetry)
-//            }
-//        )
+        BookedTokenDetailsScreen(
+            tokenNumber = state.bookedTokenDetails?.tokenNumber.orEmpty(),
+            tokenExpiryTime = state.expiryTime,
+            isCheckInProgress = state.isCheckInButtonLoading,
+            station = state.bookedTokenDetails?.bookingStation,
+            dialogState = state.dialogState,
+            isDiySwap = state.idDiySwap,
+            onDismissDialog = {
+                viewModel.onEvent(TokenDetailsScreenEvent.DismissDialog)
+            },
+            onBookingExpiryTryAgainClicked = {
+                viewModel.onEvent(TokenDetailsScreenEvent.BookingExpiryTryAgainClicked)
+                onBookingCancelled()
+            },
+            onCancelBookingClicked = {
+                viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingClicked)
+            },
+            onCancelBookingConfirmed = {
+                viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingConfirmed)
+            },
+            onCheckInAtStationClicked = {
+                viewModel.onEvent(TokenDetailsScreenEvent.CheckInAtStationClicked)
+            },
+            onGetDirectionsClicked = {
+                viewModel.onEvent(TokenDetailsScreenEvent.GetDirectionsClicked)
+            },
+            onRetryBeaconSearchClicked = {
+                viewModel.onEvent(TokenDetailsScreenEvent.NoBeaconFoundRetry)
+            }
+        )
     }
 }
 

@@ -21,6 +21,9 @@ interface NetworkStatusProvider {
     val currentConnectionStatusState: StateFlow<ConnectionStatus>
 }
 
+
+
+
 @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
 fun NetworkStatusProvider(): NetworkStatusProvider {
     val appContext = PlatformContext.getApplicationContext() as Context
@@ -108,6 +111,7 @@ private fun getNetworkConnection(capabilities: NetworkCapabilities?): Connection
         capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> ConnectionStatus.CELLULAR
         else -> ConnectionStatus.NONE
     }
+
 
 internal class NetworkStatusProviderImpl(
     initialConnection: ConnectionStatus = ConnectionStatus.NONE,

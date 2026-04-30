@@ -19,10 +19,25 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.cashfree.pg.core.api.callback.CFCheckoutResponseCallback
 import com.cashfree.pg.core.api.utils.CFErrorResponse
 import com.google.android.gms.common.api.ResolvableApiException
@@ -31,12 +46,20 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import com.yuma.oemsdk.navigation.SdkNavHost
+import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.global_events.EnableBluetoothEvent
 import com.yumaoem.core.utils.global_events.HideKeyboard
 import com.yumaoem.core.utils.global_events.ShowEnableLocationDialog
 import com.yumaoem.core.utils.global_events.controller.EventController
+import com.yumaoem.core.utils.lifecycle.GetLifecycleEvents
+import com.yumaoem.core.utils.network_connection.ConnectionStatus
+import com.yumaoem.core.utils.network_connection.NetworkStatusProvider
 import com.yumaoem.core_ui.theme.YumaAppTheme
 import com.yumaoem.core_ui.utils.snackbar.ObserveAsEvents
+import com.yumaoem.core_ui.utils.snackbar.SnackbarController
+import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
+import com.yumaoem.core_ui.utils.snackbar.composables.ErrorSnackBar
+import kotlinx.coroutines.launch
 
 /**
  * The SDK's internal Activity, launched when [YumaSdk.launchHome] is called.
@@ -220,9 +243,110 @@ internal class SdkMainActivity : ComponentActivity(), CFCheckoutResponseCallback
 @Composable
 private fun App(finish: () -> Unit) {
     YumaAppTheme {
-        SdkNavHost(
-            onExit = { finish() }
+        Column(
+            Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            ObserveNetworkStatus()
+            startLocationRequests()
+            val snackbarHostState = remember {
+                SnackbarHostState()
+            }
+
+            ObserveSnackBarEvents(snackbarHostState)
+            Scaffold(
+                containerColor = Color.White,
+                snackbarHost = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        SnackbarHost(
+                            hostState = snackbarHostState,
+                            snackbar = { data ->
+                                ErrorSnackBar(data)
+                            }
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+            ) { inertPadding ->
+                SdkNavHost(
+                    modifier = Modifier.padding(inertPadding),
+                    onExit = { finish() }
+                )
+            }
+        }
+        GetLifecycleEvents(
+            lifecycleOwner = LocalLifecycleOwner.current,
+            onResume = {
+
+            }
         )
+    }
+}
+
+@Composable
+private fun ObserveSnackBarEvents(
+    snackbarHostState: SnackbarHostState
+) {
+    val scope = rememberCoroutineScope()
+    ObserveAsEvents(
+        flow = SnackbarController.events,
+        snackbarHostState
+    ) { event ->
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+
+            val result = snackbarHostState.showSnackbar(
+                message = event.message,
+                actionLabel = event.action?.name,
+                duration = SnackbarDuration.Short
+            )
+
+            if (result == SnackbarResult.ActionPerformed) {
+                event.action?.action?.invoke()
+            }
+        }
+    }
+}
+
+@Composable
+private fun startLocationRequests() {
+    val coroutineScope = rememberCoroutineScope()
+    val locationProvider: CoreLocationProvider = YumaSdk.coreLocationProvider
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            locationProvider.startLocationUpdates()
+        }
+    }
+}
+
+@Composable
+private fun ObserveNetworkStatus() {
+    val coroutineScope = rememberCoroutineScope()
+    val networkStatusProvider: NetworkStatusProvider = YumaSdk.networkStatusProvider
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            networkStatusProvider.currentConnectionStatusState.collect { connection ->
+                when (connection) {
+                    ConnectionStatus.NONE -> {
+                        SnackbarController.sendEvent(
+                            SnackbarEvent(
+                                message = "No internet connection. Please check your network.",
+                                duration = SnackbarDuration.Indefinite
+                            )
+                        )
+                    }
+
+                    ConnectionStatus.WIFI -> {}
+                    ConnectionStatus.CELLULAR -> {}
+                }
+            }
+        }
     }
 }
 

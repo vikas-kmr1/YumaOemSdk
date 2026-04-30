@@ -69,14 +69,14 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/yuma_logo" />
-        <!--
+
                 <service
                     android:name="com.yumaoem.core.utils.notifications.data.fire_base_messaging.FireBaseService"
                     android:exported="true">
                     <intent-filter>
                         <action android:name="com.google.firebase.MESSAGING_EVENT" />
                     </intent-filter>
-                </service>-->
+                </service>
 
         <service
             android:name=".feature_home.common.notification.NotificationService"

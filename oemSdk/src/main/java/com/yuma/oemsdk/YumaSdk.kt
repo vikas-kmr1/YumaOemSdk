@@ -18,6 +18,8 @@ import com.yumaoem.core.utils.context.AndroidContextProvider
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.data.AndroidBluetoothController
 import com.yumaoem.core.utils.device_info.DeviceInfoProvider
+import com.yumaoem.core.utils.network_connection.NetworkStatusProvider
+import com.yumaoem.core.utils.network_connection.NetworkStatusProviderImpl
 import com.yumaoem.core.utils.sound_player.SoundPlayer
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.corepreference.createDataStore
@@ -141,10 +143,14 @@ object YumaSdk {
 
     // Core Services
     internal lateinit var prefManager: YumaPrefUtilApi
+    internal lateinit var coreLocationProvider: CoreLocationProvider
+    internal lateinit var networkStatusProvider: NetworkStatusProvider
     private val jsonConfig = Json { ignoreUnknownKeys = true }
     internal lateinit var soundPlayer: SoundPlayer
     internal lateinit var andoridPaymentContextProvider: AndroidPaymentContextProvider
     internal lateinit var paymentManager: PaymentManager
+
+    internal lateinit var onboardingDatasource: OnboardingRemoteDataSource
     // ─── Initialization ───────────────────────────────────────────────────────
     /**
      * Initializes the SDK. Must be called in the Client's Application class before any
@@ -171,12 +177,12 @@ object YumaSdk {
             // 1. Core Services Setup
             prefManager = initYumaPrefManager(applicationContext)
             andoridPaymentContextProvider = AndroidPaymentContextProvider()
+            coreLocationProvider = CoreLocationProvider(applicationContext)
+            networkStatusProvider = NetworkStatusProvider()
             val cashfreeGateway: PaymentGateway = AndroidPaymentGateway(applicationContext)
             val loggerApi = LoggerApiImpl(enableLogging)
-            val networkClient =
-                initYumaNetworkClient(enableLogging, loggerApi, prefManager, sdkConfig.environment)
+            val networkClient = initYumaNetworkClient(enableLogging, loggerApi, prefManager, sdkConfig.environment)
             val locationProvider = LocationProvider(applicationContext)
-            val coreLocationProvider = CoreLocationProvider(applicationContext)
             val deviceInfoProvider = DeviceInfoProvider(applicationContext)
             val serviceLauncher = ServiceLauncher(applicationContext)
             val navigationStateRepository = NavigationStateRepository()
@@ -188,8 +194,7 @@ object YumaSdk {
             )
 
             // 2. Data Sources & Repositories Setup
-            val onboardingDatasource =
-                OnboardingRemoteDataSource(networkClient, coreLocationProvider)
+             onboardingDatasource = OnboardingRemoteDataSource(networkClient, coreLocationProvider)
             val yuzenDataSource =
                 YuzenRemoteDataSource(networkClient, jsonConfig, coreLocationProvider)
             val homeDataSource =
