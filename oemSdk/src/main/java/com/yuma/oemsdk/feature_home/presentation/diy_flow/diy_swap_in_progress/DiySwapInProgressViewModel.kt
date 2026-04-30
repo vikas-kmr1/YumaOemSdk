@@ -1,20 +1,20 @@
-/*
 package com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.yuma.oemsdk.data.network.SdkHomeRemoteDataSource
-import com.yuma.oemsdk.location.SdkLocationManager
-import com.yuma.oemsdk.prefs.SdkPrefManager
-import com.yuma.oemsdk.viewmodel.SdkHomeViewModel
+import com.yuma.oemsdk.onboarding.SilentAuthViewModel
 import com.yumacustomer.core_analytics.api.AnalyticsApi
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumacustomer.new_ble_sdk.data.CommonSessionConfig
 import com.yumacustomer.new_ble_sdk.data.SmartSwapSubmitResponse
 import com.yumacustomer.new_ble_sdk.data.YumaResponse
-import com.yumaoem.core.model.auth.User
+import com.yumacustomer.new_ble_sdk.data.YumaResponse.InitSuccess
+import com.yumacustomer.new_ble_sdk.data.YumaResponse.SubmitSuccess
+import com.yumacustomer.new_ble_sdk.data.YumaResponse.SyncDifferenceRes
+import com.yumaoem.core.app_navigation_state.NavigationStateRepository
 import com.yumaoem.core.utils.currentTimeMillis
+import com.yumaoem.core.utils.device_info.DeviceInfoProvider
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core.utils.qr_validator.BatteryQrValidator
 import com.yumaoem.core.utils.qr_validator.QR_Patterns.BATTERY_CODE_SEPARATOR
@@ -23,11 +23,8 @@ import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
-import com.yumaoem.corepreference.model.BookedTokenDetailsDTO
 import com.yumaoem.feature_home.common.customer_support.CustomerSupportCallInteractor
 import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
-import com.yumaoem.feature_home.data.dto.auto_dialer.AutoDialerDetail
-import com.yumaoem.feature_home.data.dto.auto_dialer.AutoDialerRequest
 import com.yumaoem.feature_home.data.dto.cu_response.CUResponseDTO
 import com.yumaoem.feature_home.data.dto.cu_response.deserializeCUResponse
 import com.yumaoem.feature_home.domain.usecase.auto_dialer.AutoDialerRequestUseCase
@@ -43,9 +40,15 @@ import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDet
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetUserDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.token_status.GetTokenStatusUseCase
 import com.yumaoem.feature_home.presentation.diy_flow.CommonSessionConfigFactory
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.BikeDetails
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressEvent
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressState
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.args.SwapInProgressScreenArgs
+import com.yumaoem.feature_onboarding.data.network.OnboardingRemoteDataSource
+import com.yumaoem.feature_onboarding.domain.use_case.drop_off.GetDropOffDataUseCase
+import com.yumaoem.feature_onboarding.domain.use_case.verify_otp.SilentAuthUseCase
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -56,6 +59,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlin.collections.plus
 
 class DiySwapInProgressViewModel(
     private val initializeBleSessionUseCase: InitializeBleSessionUseCase,
@@ -74,7 +78,7 @@ class DiySwapInProgressViewModel(
     private val customerSupportCallInteractor: CustomerSupportCallInteractor,
     private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
     private val prefsApi: YumaPrefUtilApi,
-    private val analyticsApi: AnalyticsApi,
+    //private val analyticsApi: AnalyticsApi,
     private val loggerApi: LoggerApi,
     private val json: Json
 ) : ViewModel() {
@@ -126,8 +130,7 @@ class DiySwapInProgressViewModel(
         }
     }
 
-    */
-/**
+    /**
      * Handles the BLE response flow:
      * 1. Initialization: Receives [YumaResponse.InitSuccess].
      * 2. Swap Process:
@@ -141,19 +144,18 @@ class DiySwapInProgressViewModel(
      *    - On [YumaResponse.SubmitSuccess], calls [CleanupBleSessionUseCase].
      *
      * Note: Refer to DiyViewModel in Yuma app for SDK response handling details.
-     *//*
-
+     */
 
     private fun handleBleResponse(response: YumaResponse) {
         loggerApi.logDWithTag(TAG, "handleBleResponse: ${response}")
         when (response) {
             is YumaResponse.NetworkSuccess -> handleNetworkSuccess()
             is YumaResponse.Connected -> handleConnected()
-            is YumaResponse.SyncDifferenceRes -> handleSyncDifference(response)
-            is YumaResponse.SubmitSuccess -> handleSubmitSuccess()
+            is SyncDifferenceRes -> handleSyncDifference(response)
+            is SubmitSuccess -> handleSubmitSuccess()
             is YumaResponse.Error -> handleError(response)
             is YumaResponse.PermissionGranted -> handlePermissionGranted()
-            is YumaResponse.InitSuccess -> handleInitSuccess()
+            is InitSuccess -> handleInitSuccess()
             is YumaResponse.ResponseState -> {
                 loggerApi.logDWithTag(TAG, "ResponseState received: ${response.cuResponse}")
                 handleResponseState(response)
@@ -190,10 +192,8 @@ class DiySwapInProgressViewModel(
         }
     }
 
-    private fun handleSyncDifference(response: YumaResponse.SyncDifferenceRes) {
-        */
-/** this logic is shelved**//*
-
+    private fun handleSyncDifference(response: SyncDifferenceRes) {
+        /** this logic is shelved**/
     }
 
     private fun handleSubmitSuccess() {
@@ -254,19 +254,17 @@ class DiySwapInProgressViewModel(
             }
             return
         }
-        */
-/** taking all other values as default except id and message **//*
-
+        /** taking all other values as default except id and message **/
         val smartSwapResponse = SmartSwapSubmitResponse(
-                id = id,
-                message = message,
-                isManualFlowEnabled = false,
-                timeTaken = "",
-                isTokenCompleted = false,
-                isSessionTimedOut = false,
-                isCallInitiated = false,
-                isPingAvailable = false,
-                isYcuScanAllowedAgain = false
+            id = id,
+            message = message,
+            isManualFlowEnabled = false,
+            timeTaken = "",
+            isTokenCompleted = false,
+            isSessionTimedOut = false,
+            isCallInitiated = false,
+            isPingAvailable = false,
+            isYcuScanAllowedAgain = false
         )
         handleSmartSwapSubmitSuccess(smartSwapResponse)
     }
@@ -558,9 +556,7 @@ class DiySwapInProgressViewModel(
 
 
     fun checkSwapStatus(tokenId : Long) {
-        */
-/** logic shelved **//*
-
+        /** logic shelved **/
     }
 
     fun sdkStartSwap() {
@@ -594,9 +590,7 @@ class DiySwapInProgressViewModel(
             smartSwapSubmit()
             return
         }
-        */
-/** At this point -swap is Not initiated and device is connected. **//*
-
+        /** At this point -swap is Not initiated and device is connected. **/
         submitSwapResult()
 
         _state.value = _state.value.copy(isSubmitting = true)
@@ -618,7 +612,7 @@ class DiySwapInProgressViewModel(
                     status = "Submitting...",
                     bottomSheet = DiySwapBottomSheet.None
                 )
-               val smartSwapSubmitResponse =  smartSwapSubmitUseCase()
+                val smartSwapSubmitResponse =  smartSwapSubmitUseCase()
                 handleSmartSwapSubmitSuccess(smartSwapSubmitResponse)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -999,7 +993,7 @@ class DiySwapInProgressViewModel(
             } ?: return@launch
 
             loggerApi.logDWithTag(TAG,
-                    "loadBookedTokenDetails: stationID${tokenDetails.bookingStation?.stationId} StationName ${tokenDetails.bookingStation?.stationName}")
+                "loadBookedTokenDetails: stationID${tokenDetails.bookingStation?.stationId} StationName ${tokenDetails.bookingStation?.stationName}")
 
             _state.update { current ->
                 current.copy(
@@ -1013,7 +1007,7 @@ class DiySwapInProgressViewModel(
     private fun sendFailedToLoadStationDetailsEvents() {
         viewModelScope.launch {
             val currentUser = prefsApi.getUserData()
-            analyticsApi.postEvent(
+          /*  analyticsApi.postEvent(
                 event = "FAILED_TO_GET_STATION_DETAILS",
                 values = mapOf(
                     "user_id" to currentUser?.userId.orEmpty(),
@@ -1021,7 +1015,7 @@ class DiySwapInProgressViewModel(
                     "mobile_number" to currentUser?.phone.orEmpty(),
                     "client_id" to currentUser?.clientId.orZero(),
                 )
-            )
+            )*/
         }
     }
 
@@ -1039,22 +1033,22 @@ class DiySwapInProgressViewModel(
                 eventValues["time_on_page"] =
                     (currentTimeMillis() - launchedTimeStamp).toString()
             }
-            analyticsApi.postEvent(
+    /*        analyticsApi.postEvent(
                 event = "screen_viewed",
                 values = commonValues + eventValues
-            )
+            )*/
         }
     }
 
     fun sendBottomSheetClickedEvent() {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+      /*      analyticsApi.postEvent(
                 event = "screen_viewed",
                 values = commonValues + mapOf(
                     "screen_name" to "diy_bike_details_sheet"
                 )
-            )
+            )*/
         }
     }
 
@@ -1072,15 +1066,15 @@ class DiySwapInProgressViewModel(
                 eventValues["time_on_page"] =
                     (currentTimeMillis() - manualBatteryLaunchedTimeStamp).toString()
             }
-            analyticsApi.postEvent(
+/*            analyticsApi.postEvent(
                 event = "screen_viewed",
                 values = commonValues + eventValues
-            )
+            )*/
         }
     }
 
     fun sendCsButtonClickedEvent() {
-        viewModelScope.launch {
+    /*    viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
             analyticsApi.postEvent(
                 event = "cs_clicked",
@@ -1089,37 +1083,37 @@ class DiySwapInProgressViewModel(
                     "ycu_number" to _state.value.ycuQrCode
                 )
             )
-        }
+        }*/
     }
 
     fun sendCsReceiveCallEvent(contactNumber: String) {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+   /*         analyticsApi.postEvent(
                 event = "cs_receive_call_clicked",
                 values = commonValues + mapOf(
                     "screen_name" to "diy_swap_started_screen",
                     "call_back_number_entered" to contactNumber
                 )
-            )
+            )*/
         }
     }
 
     fun sendSubmitClickedEvent(isSuccess: Boolean, message: String?) {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+  /*          analyticsApi.postEvent(
                 event = "diy_swap_submit_clicked",
                 values = commonValues + mapOf(
                     "status" to (if (isSuccess) "success" else "failed"),
                     "failure_reason" to (message ?: ""),
                 )
-            )
+            )*/
         }
     }
 
     fun sendManualBatteryScannedEvent(isSuccess: Boolean, message: String?, isManualEntry: Boolean) {
-        viewModelScope.launch {
+/*        viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
             analyticsApi.postEvent(
                 event = "manual_battery_scanned",
@@ -1131,7 +1125,7 @@ class DiySwapInProgressViewModel(
                     "is_QR_scan" to !isManualEntry,
                 )
             )
-        }
+        }*/
     }
 
     override fun onCleared() {
@@ -1139,7 +1133,7 @@ class DiySwapInProgressViewModel(
         cleanupSession()
     }
 
-    internal class Factory(
+    class Factory(
         private val initializeBleSessionUseCase: InitializeBleSessionUseCase,
         private val startSwapUseCase: StartSwapUseCase,
         private val swapStatusUseCase: SwapStatusUseCase,
@@ -1156,7 +1150,7 @@ class DiySwapInProgressViewModel(
         private val customerSupportCallInteractor: CustomerSupportCallInteractor,
         private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
         private val prefsApi: YumaPrefUtilApi,
-        private val analyticsApi: AnalyticsApi,
+        //private val analyticsApi: AnalyticsApi,
         private val loggerApi: LoggerApi,
         private val json: Json
     ) : ViewModelProvider.Factory {
@@ -1164,11 +1158,11 @@ class DiySwapInProgressViewModel(
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
             DiySwapInProgressViewModel(
                 initializeBleSessionUseCase = initializeBleSessionUseCase,
+                observeResponses = observeResponses,
                 startSwapUseCase = startSwapUseCase,
                 swapStatusUseCase = swapStatusUseCase,
                 submitSwapResultUseCase = submitSwapResultUseCase,
                 cleanupBleSessionUseCase = cleanupBleSessionUseCase,
-                observeResponses = observeResponses,
                 commonSessionConfigFactory = commonSessionConfigFactory,
                 getTokenStatusUseCase = getTokenStatusUseCase,
                 autoDialerRequestUseCase = autoDialerRequestUseCase,
@@ -1179,7 +1173,6 @@ class DiySwapInProgressViewModel(
                 customerSupportCallInteractor = customerSupportCallInteractor,
                 commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
                 prefsApi = prefsApi,
-                analyticsApi = analyticsApi,
                 loggerApi = loggerApi,
                 json = json,
             ) as T
@@ -1190,4 +1183,4 @@ sealed class DiySwapInProgressUiEvent {
     data class SwapCompleted(val swapTime: String) : DiySwapInProgressUiEvent()
     data class ShowSuccessSnackbar(val message: String) : DiySwapInProgressUiEvent()
     data class ShowError(val message: String) : DiySwapInProgressUiEvent()
-}*/
+}

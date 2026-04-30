@@ -7,8 +7,11 @@ import android.util.Log
 import com.yuma.oemsdk.YumaSdk.init
 import com.yuma.oemsdk.core_network.HttpClientApiImpl
 import com.yuma.oemsdk.onboarding.SilentAuthViewModel
+import com.yumacustomer.core_analytics.api.AnalyticsApi
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumacustomer.core_logger.impl.LoggerApiImpl
+import com.yumacustomer.new_ble_sdk.api.YumaBleSDK
+import com.yumacustomer.new_ble_sdk.data.CommonSessionConfig
 import com.yumaoem.core.app_navigation_state.NavigationStateRepository
 import com.yumaoem.core.utils.context.AndroidContextProvider
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
@@ -17,11 +20,23 @@ import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.corepreference.createDataStore
 import com.yumaoem.corepreference.impl.PreferenceApiImpl
 import com.yumaoem.corepreference.impl.util.YumaPrefUtilImpl
+import com.yumaoem.feature_home.common.customer_support.CustomerSupportCallInteractor
 import com.yumaoem.feature_home.common.notification.ServiceLauncher
 import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
 import com.yumaoem.feature_home.data.network.HomeRemoteDataSource
 import com.yumaoem.feature_home.data.network.YuzenRemoteDataSource
 import com.yumaoem.feature_home.data.repository.HomeRepositoryImpl
+import com.yumaoem.feature_home.data.repository.YumaBleRepositoryImpl
+import com.yumaoem.feature_home.domain.repository.YumaBleRepository
+import com.yumaoem.feature_home.domain.usecase.auto_dialer.AutoDialerRequestUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.CleanupBleSessionUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.InitializeBleSessionUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.ObserveBleResponsesUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.SmartSwapSubmitUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.StartSwapUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.SubmitChargedBatteryQrUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.SubmitSwapResultUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.SwapStatusUseCase
 import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.logout_user.LogoutUserUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.all_station_markers.GetAllStationsUseCase
@@ -31,6 +46,9 @@ import com.yumaoem.feature_home.domain.usecase.profile_screen.GetSwapHistoryUseC
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetUserDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.token_booking.book_token.BookTokenUseCase
+import com.yumaoem.feature_home.domain.usecase.token_status.GetTokenStatusUseCase
+import com.yumaoem.feature_home.presentation.diy_flow.CommonSessionConfigFactory
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressViewModel
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewmodel.HomeViewModel
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapViewModel
@@ -102,11 +120,11 @@ object YumaSdk {
     private var isInitialized = false
 
     private lateinit var applicationContext: Context
-    private var config: YumaSdkConfiguration? = null
+    private lateinit var config: YumaSdkConfiguration
 
 
-    // Factory for SilentAuthViewModel
-    internal var silentAuthViewModelFactory: SilentAuthViewModel.Factory? = null
+    // Factory for ViewModels
+    internal lateinit var silentAuthViewModelFactory: SilentAuthViewModel.Factory
 
     internal lateinit var homeViewModelFactory: HomeViewModel.Factory
 
@@ -115,6 +133,8 @@ object YumaSdk {
     internal lateinit var  prefManager: YumaPrefUtilApi
 
     internal lateinit var profileViewModelFactory: ProfileViewModel.Factory
+
+    internal lateinit var diySwapInProgressViewModel: DiySwapInProgressViewModel.Factory
 
     // ─── Initialization ───────────────────────────────────────────────────────
 
@@ -246,7 +266,48 @@ object YumaSdk {
                 dataSource = homeDataSource,
                 loggerApi = loggerApi,
                 prefUtilApi = prefManager,
-                commonAnalyticsParamsProvider = c,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+            )
+
+            // 9. DiySwapInProgressViewModel
+            val yumaBleSDK: YumaBleSDK = YumaBleSDK(
+                context,
+                sdkConfig.environment.name,
+            )
+           val yumaBleRepository: YumaBleRepository = YumaBleRepositoryImpl(yumaBleSDK)
+            val initializeBleSessionUseCase = InitializeBleSessionUseCase(yumaBleRepository)
+            val startSwapUseCase: StartSwapUseCase = StartSwapUseCase(yumaBleRepository)
+            val swapStatusUseCase: SwapStatusUseCase = SwapStatusUseCase(yumaBleRepository)
+            val submitSwapResultUseCase: SubmitSwapResultUseCase = SubmitSwapResultUseCase(yumaBleRepository)
+            val cleanupBleSessionUseCase: CleanupBleSessionUseCase = CleanupBleSessionUseCase(yumaBleRepository)
+            val observeResponses: ObserveBleResponsesUseCase = ObserveBleResponsesUseCase(yumaBleRepository)
+            val commonSessionConfigFactory: CommonSessionConfigFactory = CommonSessionConfigFactory(prefManager,coreLocationProvider)
+            val getTokenStatusUseCase: GetTokenStatusUseCase = GetTokenStatusUseCase(homeRepository)
+            val autoDialerRequestUseCase: AutoDialerRequestUseCase = AutoDialerRequestUseCase(homeRepository)
+            val submitChargedBatteryQrUseCase: SubmitChargedBatteryQrUseCase = SubmitChargedBatteryQrUseCase(yumaBleRepository)
+            val smartSwapSubmitUseCase: SmartSwapSubmitUseCase = SmartSwapSubmitUseCase(yumaBleRepository)
+            val customerSupportCallInteractor: CustomerSupportCallInteractor = CustomerSupportCallInteractor(prefManager,autoDialerRequestUseCase)
+
+
+            diySwapInProgressViewModel = DiySwapInProgressViewModel.Factory(
+                initializeBleSessionUseCase = initializeBleSessionUseCase,
+                startSwapUseCase = startSwapUseCase,
+                swapStatusUseCase = swapStatusUseCase,
+                submitSwapResultUseCase = submitSwapResultUseCase,
+                cleanupBleSessionUseCase = cleanupBleSessionUseCase,
+                observeResponses = observeResponses,
+                getTokenStatusUseCase = getTokenStatusUseCase,
+                autoDialerRequestUseCase = autoDialerRequestUseCase,
+                submitChargedBatteryQrUseCase = submitChargedBatteryQrUseCase,
+                smartSwapSubmitUseCase = smartSwapSubmitUseCase,
+                getUserDetailsUseCase = getUserDetailsUseCase,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                loggerApi = loggerApi,
+                prefsApi = prefManager,
+                customerSupportCallInteractor = customerSupportCallInteractor,
+                commonSessionConfigFactory = commonSessionConfigFactory,
+                json =   Json { ignoreUnknownKeys = true },
             )
 
             isInitialized = true

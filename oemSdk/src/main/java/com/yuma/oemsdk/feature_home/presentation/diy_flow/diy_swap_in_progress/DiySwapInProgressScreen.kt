@@ -1,4 +1,3 @@
-/*
 package com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress
 
 import androidx.activity.compose.BackHandler
@@ -35,15 +34,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-=
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.noRippleDebounceClickable
-=
 import com.yumaoem.core_ui.components.buttons.YumaPrimaryButton
 import com.yumaoem.core_ui.components.snackbar.SuccessSnackbar
-
 import com.yumaoem.core_ui.theme.YumaAppTheme
 import com.yumaoem.core_ui.theme.color.Colors
 import com.yumaoem.core_ui.theme.color.LocalColors
@@ -75,11 +76,14 @@ fun DiySwapInProgressScreenRoot(
     onRetry: () -> Unit,
     onSuccessfulSwap: (String) -> Unit,
     isHomeTab: Boolean
-){
-    val viewModel = koinViewModel<DiySwapInProgressViewModel>()
+) {
+    val viewModel: DiySwapInProgressViewModel =
+        viewModel(factory = YumaSdk.diySwapInProgressViewModel)
     val state by viewModel.state.collectAsState()
-    val isMultiBatteryFlow: State<Boolean> = derivedStateOf {
-        state.batteryCount>1
+    val isMultiBatteryFlow: State<Boolean> = remember {
+        derivedStateOf {
+            state.batteryCount > 1
+        }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -147,7 +151,7 @@ fun DiySwapInProgressScreenRoot(
                     SuccessSnackbar(data = data)
                 }
             }
-        ) {
+        ) { innerPadding ->
             if (state.showScanBatteryScreen.not()) {
                 LaunchedEffect(Unit) {
                     viewModel.sendDiySwapInProgressScreenViewedEvent()
@@ -171,6 +175,7 @@ fun DiySwapInProgressScreenRoot(
                     viewModel.sendManualBatteryScreenViewedEvent()
                 }
                 DiyScanBatteryScreen(
+                    modifier = Modifier.padding(innerPadding),
                     onBackClicked = {
                         viewModel.onEvent(DiySwapInProgressEvent.OnBackClicked)
                     },
@@ -178,7 +183,12 @@ fun DiySwapInProgressScreenRoot(
                         viewModel.onEvent(DiySwapInProgressEvent.ToggleFlashlight)
                     },
                     onScanCompleted = { result, isManualEntry ->
-                        viewModel.onEvent(DiySwapInProgressEvent.OnBatteryScanned(result,isManualEntry))
+                        viewModel.onEvent(
+                            DiySwapInProgressEvent.OnBatteryScanned(
+                                result,
+                                isManualEntry
+                            )
+                        )
                     },
                     onCustomerSupportClicked = {
                         viewModel.showCustomerSupportBottomSheet()
@@ -294,11 +304,11 @@ fun DiySwapInProgressScreenStationHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-        .fillMaxWidth()
-        .background(
-            color = Color(0xFFF5F7FA)
-        )
-        .padding(start = 24.dp, end = 24.dp,bottom = 20.dp, top = 50.dp)
+            .fillMaxWidth()
+            .background(
+                color = Color(0xFFF5F7FA)
+            )
+            .padding(start = 24.dp, end = 24.dp, bottom = 20.dp, top = 50.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.Start,
@@ -363,7 +373,7 @@ fun DiySwapNeedHelpFooter(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             Image(
-                painter = painterResource(Res.drawable.ic_phone_outlined),
+                painter = painterResource(R.drawable.ic_phone_outlined),
                 contentDescription = "phone icon"
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -499,4 +509,4 @@ fun DiySwapBottomSheetHost(
             }
         }
     }
-}*/
+}

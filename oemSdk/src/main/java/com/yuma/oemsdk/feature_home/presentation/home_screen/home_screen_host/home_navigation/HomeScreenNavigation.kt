@@ -25,6 +25,7 @@ import com.yumaoem.core_ui.utils.animation.defaultEnterTransition
 import com.yumaoem.core_ui.utils.animation.defaultExitTransition
 import com.yumaoem.core_ui.utils.animation.defaultPopEnterTransition
 import com.yumaoem.core_ui.utils.animation.defaultPopExitTransition
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressScreenRoot
 
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.args.SwapInProgressScreenArgs
 import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanMachineQrScreenRoot
@@ -190,36 +191,36 @@ private fun NavGraphBuilder.navigateAsPerState(
 
     composable<DiySwapInProgressScreen> {
         Text("DiySwapInProgressScreen")
-//        if (viewModel.swapInProgressScreenArgs != null) {
-//            DiySwapInProgressScreenRoot(
-//                isHomeTab = isHomeTab,
-//                onRetry = {
-//                    viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
-//                },
-//                onSuccessfulSwap = { swapTime ->
-//                    viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
-//                },
-//                args = viewModel.swapInProgressScreenArgs!!
-//            )
-//        }
+        if (viewModel.swapInProgressScreenArgs != null) {
+            DiySwapInProgressScreenRoot(
+                isHomeTab = isHomeTab,
+                onRetry = {
+                    viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
+                },
+                onSuccessfulSwap = { swapTime ->
+                    viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
+                },
+                args = viewModel.swapInProgressScreenArgs!!
+            )
+        }
     }
 
     composable<DiySwapStartedScreen> {
         Text("DiySwapStartedScreen")
-//        DiySwapInProgressScreenRoot(
-//            onRetry = {
-//                viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
-//            },
-//            onSuccessfulSwap = { swapTime ->
-//                viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
-//            },
-//            args = SwapInProgressScreenArgs(
-//                checkInTime = 0L,
-//                ycuQrCode = null,
-//                isSwapInitiated = true
-//            ),
-//            isHomeTab = isHomeTab
-//        )
+        DiySwapInProgressScreenRoot(
+            onRetry = {
+                viewModel.onEvent(HomeScreenEvent.NavigateToYcuScanScreen)
+            },
+            onSuccessfulSwap = { swapTime ->
+                viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = swapTime))
+            },
+            args = SwapInProgressScreenArgs(
+                checkInTime = 0L,
+                ycuQrCode = null,
+                isSwapInitiated = true
+            ),
+            isHomeTab = isHomeTab
+        )
     }
 
     composable<TagBatteryScannerScreen> {
