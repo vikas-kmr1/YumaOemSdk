@@ -111,6 +111,8 @@ dependencies {
 
     implementation(project(":new-ble-sdk"))
 
+    implementation(libs.cashfree)
+
     // Network inspection (Debug only)
     debugImplementation(libs.inspektify.ktor3)
 }

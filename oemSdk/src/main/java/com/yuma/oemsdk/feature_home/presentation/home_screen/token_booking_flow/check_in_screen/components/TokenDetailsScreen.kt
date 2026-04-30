@@ -18,6 +18,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.handle_permissions.HomeScreenPermissionViewModel
 import com.yumaoem.core.utils.noRippleDebounceClickable
 import com.yumaoem.core.utils.time_utils.formatTimeFromSeconds
@@ -43,12 +45,17 @@ import com.yumaoem.core_ui.theme.color.LocalColors
 import com.yumaoem.core_ui.theme.dimension.LocalDimensions
 import com.yumaoem.core_ui.theme.shapes.LocalAppShapes
 import com.yumaoem.core_ui.theme.typography.LocalTypography
+import com.yumaoem.core_ui.utils.collectAsLaunchedEffect
+import com.yumaoem.core_ui.utils.snackbar.SnackbarController
+import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.feature_home.domain.model.maps.all_station_markers.YumaStationMarker
 import com.yumaoem.feature_home.domain.model.maps.all_station_markers.YumaStationStatus
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.ChargingStationState
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.station_states.operational_station.OpenStationStateChip
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.station_states.station_info_bottom_sheet_common_components.GoogleMapLogoIcon
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.LatLong
+import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsScreenUiEvent
+import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsViewModel
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.components.diy_check_in_screen.DiyCheckInScreen
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.dialogs.CancelBookingConfirmationModalBottomSheet
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.dialogs.ReachStationModalBottomSheet
@@ -67,8 +74,7 @@ fun BookedTokenDetailsScreenRoot(
     onDiySwapStarted: () -> Unit,
     isHomeTab: Boolean
 ) {
-/*
-    val viewModel = koinViewModel<TokenDetailsViewModel>()
+    val viewModel: TokenDetailsViewModel = viewModel(factory = YumaSdk.tokenDetailsViewModelFactory)
     val state = viewModel.state
 
     viewModel.uiEvent.collectAsLaunchedEffect(Unit) { event ->
@@ -94,13 +100,10 @@ fun BookedTokenDetailsScreenRoot(
             }
         }
     }
-*/
-/*
 
     LaunchedEffect(Unit) {
         viewModel.sendTokenScreenViewed()
     }
-*/
 
     val factory = rememberPermissionsControllerFactory()
     val controller = remember(factory) { factory.createPermissionsController() }

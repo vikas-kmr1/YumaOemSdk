@@ -6,14 +6,19 @@ import android.content.Intent
 import android.util.Log
 import com.yuma.oemsdk.YumaSdk.init
 import com.yuma.oemsdk.core_network.HttpClientApiImpl
+import com.yuma.oemsdk.core_payment.AndroidPaymentGateway
 import com.yuma.oemsdk.onboarding.SilentAuthViewModel
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumacustomer.core_logger.impl.LoggerApiImpl
+import com.yumacustomer.core_payments.domain.PaymentGateway
+import com.yumacustomer.core_payments.paymentManager.PaymentManager
 import com.yumacustomer.new_ble_sdk.api.YumaBleSDK
 import com.yumaoem.core.app_navigation_state.NavigationStateRepository
 import com.yumaoem.core.utils.context.AndroidContextProvider
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
+import com.yumaoem.core.utils.data.AndroidBluetoothController
 import com.yumaoem.core.utils.device_info.DeviceInfoProvider
+import com.yumaoem.core.utils.sound_player.SoundPlayer
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.corepreference.createDataStore
 import com.yumaoem.corepreference.impl.PreferenceApiImpl
@@ -28,6 +33,7 @@ import com.yumaoem.feature_home.data.repository.PaymentRepositoryImpl
 import com.yumaoem.feature_home.data.repository.YumaBleRepositoryImpl
 import com.yumaoem.feature_home.domain.repository.PaymentRepository
 import com.yumaoem.feature_home.domain.usecase.auto_dialer.AutoDialerRequestUseCase
+import com.yumaoem.feature_home.domain.usecase.beacon_details.GetBeaconDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.CleanupBleSessionUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.InitializeBleSessionUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.ObserveBleResponsesUseCase
@@ -36,15 +42,22 @@ import com.yumaoem.feature_home.domain.usecase.ble.StartSwapUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SubmitChargedBatteryQrUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SubmitSwapResultUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SwapStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.checkin_screen.CancelTokenBookingUseCase
+import com.yumaoem.feature_home.domain.usecase.checkin_screen.CheckInUserUseCase
+import com.yumaoem.feature_home.domain.usecase.checkin_screen.ObserveTokenExpiryCountdownUseCase
+import com.yumaoem.feature_home.domain.usecase.checkin_screen.ValidateLocationUseCase
 import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.logout_user.LogoutUserUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.all_station_markers.GetAllStationsUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.route_info.GetRouteInfoUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.station_operation_status.GetStationOperationStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.payments.create_order.CreateOrderUseCase
 import com.yumaoem.feature_home.domain.usecase.payments.payment_home.GetPaymentPlansUseCase
+import com.yumaoem.feature_home.domain.usecase.payments.payment_status.GetPaymentStatusUseCase
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetSwapHistoryUseCase
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetUserDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase
+import com.yumaoem.feature_home.domain.usecase.tag_battery.MapNewBatteriesOnBikeUseCase
 import com.yumaoem.feature_home.domain.usecase.token_booking.book_token.BookTokenUseCase
 import com.yumaoem.feature_home.domain.usecase.token_status.GetTokenStatusUseCase
 import com.yumaoem.feature_home.presentation.diy_flow.CommonSessionConfigFactory
@@ -52,6 +65,10 @@ import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySw
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewmodel.HomeViewModel
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapViewModel
+import com.yumaoem.feature_home.presentation.home_screen.tag_battery.TagBatteryViewModel
+import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsViewModel
+import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.swap_in_progress_screen.TokenQrScreenViewModel
+import com.yumaoem.feature_home.presentation.payments.payment_details.PaymentDetailsViewmodel
 import com.yumaoem.feature_home.presentation.payments.payment_home.PaymentHomeViewModel
 import com.yumaoem.feature_home.presentation.profile_screen.ProfileViewModel
 import com.yumaoem.feature_onboarding.data.network.OnboardingRemoteDataSource
@@ -117,11 +134,17 @@ object YumaSdk {
     internal lateinit var profileViewModelFactory: ProfileViewModel.Factory
     internal lateinit var diySwapInProgressViewModelFactory: DiySwapInProgressViewModel.Factory
     internal lateinit var paymentHomeViewModelFactory: PaymentHomeViewModel.Factory
+    internal lateinit var paymentDetailsViewModelFactory: PaymentDetailsViewmodel.Factory
+    internal lateinit var tokenDetailsViewModelFactory: TokenDetailsViewModel.Factory
+    internal lateinit var tokenQrScreenViewModelFactory: TokenQrScreenViewModel.Factory
+    internal lateinit var tagBatteryViewModelFactory: TagBatteryViewModel.Factory
 
     // Core Services
     internal lateinit var prefManager: YumaPrefUtilApi
     private val jsonConfig = Json { ignoreUnknownKeys = true }
-
+    internal lateinit var soundPlayer: SoundPlayer
+    internal lateinit var andoridPaymentContextProvider: AndroidPaymentContextProvider
+    internal lateinit var paymentManager: PaymentManager
     // ─── Initialization ───────────────────────────────────────────────────────
     /**
      * Initializes the SDK. Must be called in the Client's Application class before any
@@ -147,6 +170,8 @@ object YumaSdk {
 
             // 1. Core Services Setup
             prefManager = initYumaPrefManager(applicationContext)
+            andoridPaymentContextProvider = AndroidPaymentContextProvider()
+            val cashfreeGateway: PaymentGateway = AndroidPaymentGateway(applicationContext)
             val loggerApi = LoggerApiImpl(enableLogging)
             val networkClient =
                 initYumaNetworkClient(enableLogging, loggerApi, prefManager, sdkConfig.environment)
@@ -155,6 +180,12 @@ object YumaSdk {
             val deviceInfoProvider = DeviceInfoProvider(applicationContext)
             val serviceLauncher = ServiceLauncher(applicationContext)
             val navigationStateRepository = NavigationStateRepository()
+
+            paymentManager = PaymentManager(
+                paymentGateway = cashfreeGateway,
+                contextProvider = andoridPaymentContextProvider,
+                loggerApi = loggerApi
+            )
 
             // 2. Data Sources & Repositories Setup
             val onboardingDatasource =
@@ -170,6 +201,7 @@ object YumaSdk {
             val getUserDetailsUseCase = GetUserDetailsUseCase(prefManager)
             val autoDialerRequestUseCase = AutoDialerRequestUseCase(homeRepository)
             val commonAnalyticsParamsProvider = CommonAnalyticsParamsProvider(prefManager)
+            val whatsappSupprtDetailsUseCase = GetWhatsappSupprtDetailsUseCase(homeRepository)
 
             // 4. Initialize ViewModel Factories
             silentAuthViewModelFactory = buildSilentAuthViewModelFactory(
@@ -181,7 +213,12 @@ object YumaSdk {
             )
 
             homeViewModelFactory = buildHomeViewModelFactory(
-                locationProvider, homeRepository, navigationStateRepository, serviceLauncher
+                locationProvider,
+                whatsappSupprtDetailsUseCase,
+                prefManager,
+                homeRepository,
+                navigationStateRepository,
+                serviceLauncher
             )
 
             mapViewModelFactory = buildMapViewModelFactory(
@@ -209,7 +246,53 @@ object YumaSdk {
                 loggerApi
             )
 
-            paymentHomeViewModelFactory = buildPaymentHomeViewModel(homeDataSource, prefManager, loggerApi)
+            paymentHomeViewModelFactory =
+                buildPaymentHomeViewModel(homeDataSource, prefManager, loggerApi)
+
+
+            paymentDetailsViewModelFactory = buildPaymentDetailsViewModelFactory(
+                homeDataSource,
+                paymentManager,
+                prefManager,
+                loggerApi,
+            )
+
+
+            val cancelTokenBookingUseCase = CancelTokenBookingUseCase(homeRepository)
+
+            tokenDetailsViewModelFactory = TokenDetailsViewModel.Factory(
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                bluetoothController = AndroidBluetoothController(applicationContext),
+                loggerApi = loggerApi,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                getBeaconDetailsUseCase = GetBeaconDetailsUseCase(homeRepository),
+                observeTokenExpiryCountdownUseCase = ObserveTokenExpiryCountdownUseCase,
+                checkInUserUseCase = CheckInUserUseCase(homeRepository),
+                cancelTokenBookingUseCase = cancelTokenBookingUseCase ,
+                prefUtilApi = prefManager,
+                locationProvider = coreLocationProvider,
+                validateLocationUseCase = ValidateLocationUseCase(homeRepository),
+            )
+
+            tagBatteryViewModelFactory = TagBatteryViewModel.Factory(
+                mapNewBatteriesOnBikeUseCase = MapNewBatteriesOnBikeUseCase(homeRepository),
+                prefsApi = prefManager,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                coreLocationProvider = coreLocationProvider,
+                customerSupportCallInteractor = CustomerSupportCallInteractor(prefManager,autoDialerRequestUseCase)
+            )
+
+            tokenQrScreenViewModelFactory = TokenQrScreenViewModel.Factory(
+                prefUtilApi = prefManager,
+                cancelTokenBookingUseCase = cancelTokenBookingUseCase,
+                getTokenStatusUseCase = GetTokenStatusUseCase(homeRepository),
+                supportDetailsUseCase = whatsappSupprtDetailsUseCase,
+                yumaPrefUtil = prefManager,
+                locationProvider = locationProvider,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+            )
+
+            soundPlayer = SoundPlayer()
 
             isInitialized = true
             Log.d(TAG, "✅ YumaSdk initialized | env=${sdkConfig.environment}")
@@ -278,6 +361,8 @@ object YumaSdk {
 
     private fun buildHomeViewModelFactory(
         locationProvider: LocationProvider,
+        supportDetailsUseCase: GetWhatsappSupprtDetailsUseCase,
+        prefManager: YumaPrefUtilApi,
         homeRepository: HomeRepositoryImpl,
         navigationStateRepository: NavigationStateRepository,
         serviceLauncher: ServiceLauncher
@@ -285,7 +370,7 @@ object YumaSdk {
         return HomeViewModel.Factory(
             locationProvider = locationProvider,
             yumaPrefUtil = prefManager,
-            supportDetailsUseCase = GetWhatsappSupprtDetailsUseCase(homeRepository),
+            supportDetailsUseCase = supportDetailsUseCase,
             navigationStateRepository = navigationStateRepository,
             serviceLauncher = serviceLauncher
         )
@@ -385,6 +470,26 @@ object YumaSdk {
         )
     }
 
+    private fun buildPaymentDetailsViewModelFactory(
+        homeDataSource: HomeRemoteDataSource,
+        paymentManager: PaymentManager,
+        preferenceApi: YumaPrefUtilApi,
+        loggerApi: LoggerApi,
+
+        ): PaymentDetailsViewmodel.Factory {
+        val paymentRepository = PaymentRepositoryImpl(homeDataSource)
+        val createOrderUseCase = CreateOrderUseCase(paymentRepository)
+        val getPaymentStatusUseCase = GetPaymentStatusUseCase(paymentRepository)
+
+
+        return PaymentDetailsViewmodel.Factory(
+            createOrderUseCase = createOrderUseCase,
+            getPaymentStatusUseCase = getPaymentStatusUseCase,
+            paymentManager = paymentManager,
+            preferenceApi = preferenceApi,
+            loggerApi = loggerApi
+        )
+    }
 
     // ─── Core Services Initializers ───────────────────────────────────────────
     private fun initYumaNetworkClient(

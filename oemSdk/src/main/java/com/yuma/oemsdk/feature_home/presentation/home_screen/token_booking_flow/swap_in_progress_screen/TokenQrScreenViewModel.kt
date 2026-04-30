@@ -3,8 +3,8 @@ package com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.swa
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.yumaoem.core.utils.currentTimeMillis
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
@@ -31,7 +31,7 @@ class TokenQrScreenViewModel(
     private val locationProvider: LocationProvider,
     //private val analyticsApi: AnalyticsApi,
     private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
-) :ViewModel() {
+) : ViewModel() {
 
     private val _state = mutableStateOf(TokenQrScreenState())
     val state: State<TokenQrScreenState> = _state
@@ -64,7 +64,7 @@ class TokenQrScreenViewModel(
 
     private fun loadBatteryDetails(
         onBatteryDetailsLoaded: (List<BatteryDetails>) -> Unit
-    ){
+    ) {
         viewModelScope.launch {
             val clientId = prefUtilApi.getUserData()?.clientVehicleId.orZero()
             getBatteryDetailsUseCase.invoke(
@@ -94,6 +94,7 @@ class TokenQrScreenViewModel(
                     cancelBookingDialogVisible = true
                 )
             }
+
             TokenQrScreenEvent.CancelBookingConfirmed -> {
                 _state.value = _state.value.copy(
                     cancelBookingDialogVisible = false
@@ -118,19 +119,34 @@ class TokenQrScreenViewModel(
                                     sendSwapCompleteEvent()
                                     viewModelScope.launch {
                                         prefUtilApi.removeBookedTokenDetails()
-                                        _uiEvent.emit(TokenQRScreenUiEvent.TokenStatusUpdated(TokenStatus.SWAP_COMPLETED,tokenStatus.swapTime))
+                                        _uiEvent.emit(
+                                            TokenQRScreenUiEvent.TokenStatusUpdated(
+                                                TokenStatus.SWAP_COMPLETED,
+                                                tokenStatus.swapTime
+                                            )
+                                        )
                                     }
                                     shouldContinue = false
                                 }
+
                                 2 -> {
-                                    _uiEvent.emit(TokenQRScreenUiEvent.TokenStatusUpdated(TokenStatus.CHECKED_ID))
+                                    _uiEvent.emit(
+                                        TokenQRScreenUiEvent.TokenStatusUpdated(
+                                            TokenStatus.CHECKED_ID
+                                        )
+                                    )
                                     _state.value = _state.value.copy(
                                         isSwapInProgress = false
                                     )
                                 }
+
                                 6 -> {
                                     sendSwapStartedEvent()
-                                    _uiEvent.emit(TokenQRScreenUiEvent.TokenStatusUpdated(TokenStatus.SWAP_IN_PROGRESS))
+                                    _uiEvent.emit(
+                                        TokenQRScreenUiEvent.TokenStatusUpdated(
+                                            TokenStatus.SWAP_IN_PROGRESS
+                                        )
+                                    )
                                     _state.value = _state.value.copy(
                                         isSwapInProgress = true
                                     )
@@ -179,7 +195,7 @@ class TokenQrScreenViewModel(
     }
 
     private fun getCustomerSupportData(
-        statusId:Int
+        statusId: Int
     ) {
         if (state.value.tokenStatusUpdatedForStatus == statusId) return
         viewModelScope.launch {
@@ -211,27 +227,27 @@ class TokenQrScreenViewModel(
         viewModelScope.launch {
             val currentUser = prefUtilApi.getUserData()
             val tokenData = prefUtilApi.getBookedTokenDetails()
-/*            analyticsApi.postEvent(
-                event = "booking_cancelled",
-                values = mapOf(
-                    "user_id" to currentUser?.userId.orEmpty(),
-                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                    "mobile_number" to currentUser?.phone.orEmpty(),
-                    "timestamp" to currentTimeMillis(),
-                    "latitude" to locationProvider.getCurrentLocation()?.latitude.orZero(),
-                    "longitude" to locationProvider.getCurrentLocation()?.longitude.orZero(),
-                    "station_id" to tokenData?.bookingStation?.stationId.orZero(),
-                    "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
-                    "token_id" to tokenData?.tokenID.orEmpty(),
-                    "token_number" to tokenData?.tokenNumber.orEmpty(),
-                    "before_check_in" to false,
-                    "token_expired" to false,
-                    "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
-                    "fleet_name" to currentUser?.bikeProvider.toString(),
-                    "is_diy" to tokenData?.isDiyToken.toString(),
-                    "status" to status
-                )
-            )*/
+            /*            analyticsApi.postEvent(
+                            event = "booking_cancelled",
+                            values = mapOf(
+                                "user_id" to currentUser?.userId.orEmpty(),
+                                "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+                                "mobile_number" to currentUser?.phone.orEmpty(),
+                                "timestamp" to currentTimeMillis(),
+                                "latitude" to locationProvider.getCurrentLocation()?.latitude.orZero(),
+                                "longitude" to locationProvider.getCurrentLocation()?.longitude.orZero(),
+                                "station_id" to tokenData?.bookingStation?.stationId.orZero(),
+                                "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
+                                "token_id" to tokenData?.tokenID.orEmpty(),
+                                "token_number" to tokenData?.tokenNumber.orEmpty(),
+                                "before_check_in" to false,
+                                "token_expired" to false,
+                                "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
+                                "fleet_name" to currentUser?.bikeProvider.toString(),
+                                "is_diy" to tokenData?.isDiyToken.toString(),
+                                "status" to status
+                            )
+                        )*/
         }
     }
 
@@ -245,17 +261,17 @@ class TokenQrScreenViewModel(
                 )
                 val currentUser = prefUtilApi.getUserData()
                 val tokenData = prefUtilApi.getBookedTokenDetails()
-/*                analyticsApi.postEvent(
-                    event = "swap_started",
-                    values = mapOf(
-                        "user_id" to currentUser?.userId.orEmpty(),
-                        "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                        "mobile_number" to currentUser?.phone.orEmpty(),
-                        "timestamp" to currentTimeMillis(),
-                        "station_id" to tokenData?.bookingStation?.stationId.orZero(),
-                        "battery_details" to batteryDetails.toString()
-                    )
-                )*/
+                /*                analyticsApi.postEvent(
+                                    event = "swap_started",
+                                    values = mapOf(
+                                        "user_id" to currentUser?.userId.orEmpty(),
+                                        "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+                                        "mobile_number" to currentUser?.phone.orEmpty(),
+                                        "timestamp" to currentTimeMillis(),
+                                        "station_id" to tokenData?.bookingStation?.stationId.orZero(),
+                                        "battery_details" to batteryDetails.toString()
+                                    )
+                                )*/
             }
         })
     }
@@ -286,6 +302,30 @@ class TokenQrScreenViewModel(
 
     }
 
+    class Factory(
+        private val prefUtilApi: YumaPrefUtilApi,
+        private val cancelTokenBookingUseCase: CancelTokenBookingUseCase,
+        private val getTokenStatusUseCase: GetTokenStatusUseCase,
+        private val supportDetailsUseCase: GetWhatsappSupprtDetailsUseCase,
+        private val yumaPrefUtil: YumaPrefUtilApi,
+        private val locationProvider: LocationProvider,
+        //private val analyticsApi: AnalyticsApi,
+        private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            TokenQrScreenViewModel(
+                prefUtilApi = prefUtilApi,
+                cancelTokenBookingUseCase = cancelTokenBookingUseCase,
+                getTokenStatusUseCase = getTokenStatusUseCase,
+                supportDetailsUseCase = supportDetailsUseCase,
+                yumaPrefUtil = yumaPrefUtil,
+                locationProvider = locationProvider,
+                //analyticsApi = analyticsApi,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+            ) as T
+    }
+
 }
 
 enum class TokenStatus {
@@ -297,5 +337,6 @@ enum class TokenStatus {
 sealed class TokenQRScreenUiEvent {
     data class ShowSnackbar(val message: String) : TokenQRScreenUiEvent()
     data object OnBookingCancelled : TokenQRScreenUiEvent()
-    data class TokenStatusUpdated(val tokenStatus: TokenStatus,val swapTime:String = "") : TokenQRScreenUiEvent()
+    data class TokenStatusUpdated(val tokenStatus: TokenStatus, val swapTime: String = "") :
+        TokenQRScreenUiEvent()
 }

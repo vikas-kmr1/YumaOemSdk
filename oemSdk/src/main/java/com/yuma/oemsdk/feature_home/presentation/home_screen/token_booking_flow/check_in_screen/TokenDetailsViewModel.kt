@@ -1,21 +1,21 @@
 package com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen
 
+//import com.yumacustomer.core_analytics.api.AnalyticsApi
+//import com.yumacustomer.core_logger.api.LoggerApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-//import com.yumacustomer.core_analytics.api.AnalyticsApi
-//import com.yumacustomer.core_logger.api.LoggerApi
+import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.utils.app_utils.isAndroid12OrLower
 import com.yumaoem.core.utils.bluetooth.BluetoothController
 import com.yumaoem.core.utils.bluetooth.isBluetoothEnabled
 import com.yumaoem.core.utils.bluetooth.model.BluetoothDeviceDomain
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
-import com.yumaoem.core.utils.currentTimeMillis
 import com.yumaoem.core.utils.global_events.EnableBluetoothEvent
 import com.yumaoem.core.utils.global_events.controller.EventController
-import com.yumaoem.core.utils.map_style.calculateDistanceInMeters
 import com.yumaoem.core.utils.orFalse
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core_network.impl.util.collect
@@ -26,13 +26,12 @@ import com.yumaoem.feature_home.common.toDomain
 import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
 import com.yumaoem.feature_home.common.util.openMapsDirections
 import com.yumaoem.feature_home.data.dto.beacon_details.request.BeaconDetailsRequest
+import com.yumaoem.feature_home.data.dto.check_in_user.location_validation.LocationValidationRequestDTO
 import com.yumaoem.feature_home.domain.usecase.beacon_details.GetBeaconDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.CancelTokenBookingUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.CheckInUserUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.ObserveTokenExpiryCountdownUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.ValidateLocationUseCase
-import com.yumaoem.feature_home.data.dto.check_in_user.location_validation.LocationValidationRequestDTO
-import com.yumaoem.feature_home.domain.model.token_flow.battery_details.BatteryDetails
 import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.state.DialogState
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.state.TokenDetailsScreenState
@@ -54,9 +53,9 @@ class TokenDetailsViewModel(
     private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
     private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
     private val locationProvider: CoreLocationProvider,
-    //private val loggerApi: LoggerApi,
+    private val loggerApi: LoggerApi,
     private val validateLocationUseCase: ValidateLocationUseCase,
-   // private val analyticsApi: AnalyticsApi
+    // private val analyticsApi: AnalyticsApi
 ) : ViewModel() {
     var state by mutableStateOf(TokenDetailsScreenState())
         private set
@@ -128,15 +127,16 @@ class TokenDetailsViewModel(
 
 
             TokenDetailsScreenEvent.CheckInAtStationClicked -> {
-                if(isBluetoothEnabled()){
+                if (isBluetoothEnabled()) {
                     handleCheckInAtStation()
                 } else {
                     viewModelScope.launch {
-                       EventController.sendEvent(EnableBluetoothEvent(
-                           onBluetoothEnabled = {
-                               handleCheckInAtStation()
-                           }
-                       ))
+                        EventController.sendEvent(
+                            EnableBluetoothEvent(
+                                onBluetoothEnabled = {
+                                    handleCheckInAtStation()
+                                }
+                            ))
                     }
                 }
             }
@@ -241,7 +241,7 @@ class TokenDetailsViewModel(
     private fun checkUserDistance() {
         viewModelScope.launch {
             val userLocation = locationProvider.getCurrentLocation()
-            if (userLocation==null){
+            if (userLocation == null) {
                 SnackbarController.sendEvent(
                     event = SnackbarEvent("User's location not found")
                 )
@@ -337,9 +337,9 @@ class TokenDetailsViewModel(
                     state = state.copy(
                         isCheckInButtonLoading = false
                     )
-                    if (state.bookedTokenDetails?.isDiyToken.orFalse()){
+                    if (state.bookedTokenDetails?.isDiyToken.orFalse()) {
                         _uiEvent.emit(TokenDetailsScreenUiEvent.DiySwapStarted)
-                    }else{
+                    } else {
                         _uiEvent.emit(TokenDetailsScreenUiEvent.CheckedInAtStation)
                     }
                 },
@@ -356,7 +356,11 @@ class TokenDetailsViewModel(
     fun validateLocation(latitude: Double, longitude: Double, tokenId: Int) {
         viewModelScope.launch {
             validateLocationUseCase(
-                LocationValidationRequestDTO(latitude = latitude, longitude = longitude, tokenId = tokenId)
+                LocationValidationRequestDTO(
+                    latitude = latitude,
+                    longitude = longitude,
+                    tokenId = tokenId
+                )
             ).collect(
                 onLoading = {
                     state = state.copy(
@@ -364,9 +368,9 @@ class TokenDetailsViewModel(
                     )
                 },
                 onSuccess = {
-                    if (it.isLocationValid){
+                    if (it.isLocationValid) {
                         checkInUser()
-                    }else{
+                    } else {
                         state = state.copy(
                             dialogState = DialogState.ReachStation,
                             isCheckInButtonLoading = false
@@ -393,12 +397,12 @@ class TokenDetailsViewModel(
     fun sendTokenScreenViewed() {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-/*            analyticsApi.postEvent(
-                event = "screen_viewed",
-                values = commonValues + mapOf(
-                    "screen_name" to "Token_Details_Viewed"
-                )
-            )*/
+            /*            analyticsApi.postEvent(
+                            event = "screen_viewed",
+                            values = commonValues + mapOf(
+                                "screen_name" to "Token_Details_Viewed"
+                            )
+                        )*/
         }
     }
 
@@ -410,59 +414,91 @@ class TokenDetailsViewModel(
             val currentUser = prefUtilApi.getUserData()
             val tokenData = prefUtilApi.getBookedTokenDetails()
             val location = locationProvider.getCurrentLocation()
-     /*       analyticsApi.postEvent(
-                event = "check_in_at_station",
-                values = mapOf(
-                    "user_id" to currentUser?.userId.orEmpty(),
-                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                    "mobile_number" to currentUser?.phone.orEmpty(),
-                    "timestamp" to currentTimeMillis(),
-                    "latitude" to location?.latitude.orZero(),
-                    "longitude" to location?.longitude.orZero(),
-                    "station_id" to tokenData?.bookingStation?.stationId.orZero(),
-                    "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
-                    "token_id" to tokenData?.tokenID.orEmpty(),
-                    "token_number" to tokenData?.tokenNumber.orEmpty(),
-                    "status" to status,
-                    "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
-                    "fleet_name" to currentUser?.bikeProvider.toString(),
-                    "is_diy" to tokenData?.isDiyToken.toString(),
-                )
-            )*/
+            /*       analyticsApi.postEvent(
+                       event = "check_in_at_station",
+                       values = mapOf(
+                           "user_id" to currentUser?.userId.orEmpty(),
+                           "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+                           "mobile_number" to currentUser?.phone.orEmpty(),
+                           "timestamp" to currentTimeMillis(),
+                           "latitude" to location?.latitude.orZero(),
+                           "longitude" to location?.longitude.orZero(),
+                           "station_id" to tokenData?.bookingStation?.stationId.orZero(),
+                           "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
+                           "token_id" to tokenData?.tokenID.orEmpty(),
+                           "token_number" to tokenData?.tokenNumber.orEmpty(),
+                           "status" to status,
+                           "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
+                           "fleet_name" to currentUser?.bikeProvider.toString(),
+                           "is_diy" to tokenData?.isDiyToken.toString(),
+                       )
+                   )*/
         }
     }
 
-    private fun sendCancelBookingEvent(){
+    private fun sendCancelBookingEvent() {
         viewModelScope.launch {
             val currentUser = prefUtilApi.getUserData()
             val tokenData = prefUtilApi.getBookedTokenDetails()
             val location = locationProvider.getCurrentLocation()
-/*            analyticsApi.postEvent(
-                event = "booking_cancelled",
-                values = mapOf(
-                    "user_id" to currentUser?.userId.orEmpty(),
-                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                    "mobile_number" to currentUser?.phone.orEmpty(),
-                    "timestamp" to currentTimeMillis(),
-                    "latitude" to location?.latitude.orZero(),
-                    "longitude" to location?.longitude.orZero(),
-                    "station_id" to tokenData?.bookingStation?.stationId.orZero(),
-                    "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
-                    "token_id" to tokenData?.tokenID.orEmpty(),
-                    "token_number" to tokenData?.tokenNumber.orEmpty(),
-                    "before_check_in" to true,
-                    "token_expired" to false,
-                    "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
-                    "fleet_name" to currentUser?.bikeProvider.toString(),
-                    "is_diy" to tokenData?.isDiyToken.toString(),
-                )
-            )*/
+            /*            analyticsApi.postEvent(
+                            event = "booking_cancelled",
+                            values = mapOf(
+                                "user_id" to currentUser?.userId.orEmpty(),
+                                "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+                                "mobile_number" to currentUser?.phone.orEmpty(),
+                                "timestamp" to currentTimeMillis(),
+                                "latitude" to location?.latitude.orZero(),
+                                "longitude" to location?.longitude.orZero(),
+                                "station_id" to tokenData?.bookingStation?.stationId.orZero(),
+                                "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
+                                "token_id" to tokenData?.tokenID.orEmpty(),
+                                "token_number" to tokenData?.tokenNumber.orEmpty(),
+                                "before_check_in" to true,
+                                "token_expired" to false,
+                                "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
+                                "fleet_name" to currentUser?.bikeProvider.toString(),
+                                "is_diy" to tokenData?.isDiyToken.toString(),
+                            )
+                        )*/
         }
     }
+
     companion object {
         const val MAXIMUM_ALLOWED_CHECK_IN_DISTANCE_IN_METRES = 100
         const val MAX_ALLOWED_BEACON_SEARCH_RETRIES = 2
         const val BEACON_SEARCH_TIMEOUT_IN_MILLIS: Long = 3000
+    }
+
+    class Factory(
+        private val bluetoothController: BluetoothController,
+        private val observeTokenExpiryCountdownUseCase: ObserveTokenExpiryCountdownUseCase,
+        private val getBeaconDetailsUseCase: GetBeaconDetailsUseCase,
+        private val checkInUserUseCase: CheckInUserUseCase,
+        private val cancelTokenBookingUseCase: CancelTokenBookingUseCase,
+        private val prefUtilApi: YumaPrefUtilApi,
+        private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
+        private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
+        private val locationProvider: CoreLocationProvider,
+        private val loggerApi: LoggerApi,
+        private val validateLocationUseCase: ValidateLocationUseCase,
+        // private val analyticsApi: AnalyticsApi
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            TokenDetailsViewModel(
+                bluetoothController = bluetoothController,
+                observeTokenExpiryCountdownUseCase = observeTokenExpiryCountdownUseCase,
+                getBeaconDetailsUseCase = getBeaconDetailsUseCase,
+                checkInUserUseCase = checkInUserUseCase,
+                cancelTokenBookingUseCase = cancelTokenBookingUseCase,
+                prefUtilApi = prefUtilApi,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                locationProvider = locationProvider,
+                loggerApi = loggerApi,
+                validateLocationUseCase = validateLocationUseCase,
+            ) as T
     }
 
 

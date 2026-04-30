@@ -16,7 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 
 import com.yumaoem.core_ui.components.buttons.YumaSecondaryButton
 import com.yumaoem.core_ui.theme.YumaAppTheme
@@ -41,45 +43,45 @@ fun TokenQrScreenRoot(
     onSwapCompleted: (String) -> Unit,
     isHomeTab: Boolean
 ) {
-//    val viewModel = koinViewModel<TokenQrScreenViewModel>()
-//    val state = viewModel.state.value
-//
-//    viewModel.uiEvent.collectAsLaunchedEffect(Unit) { event ->
-//        when (event) {
-//            is TokenQRScreenUiEvent.ShowSnackbar -> {
-//                SnackbarController.sendEvent(
-//                    event = SnackbarEvent(
-//                        message = event.message,
-//                    )
-//                )
-//            }
-//
-//            TokenQRScreenUiEvent.OnBookingCancelled -> { onBookingCancelled() }
-//
-//            is TokenQRScreenUiEvent.TokenStatusUpdated -> {
-//                if (event.tokenStatus == TokenStatus.SWAP_COMPLETED) {
-//                    onSwapCompleted(event.swapTime)
-//                }
-//            }
-//        }
-//    }
-//
-//    if (isHomeTab){
-//        TokenQrScreen(
-//            tokenNumber = state.tokenNumber.toString(),
-//            isCancelBookingDialogVisible = state.cancelBookingDialogVisible,
-//            isSwapInProgress = state.isSwapInProgress,
-//            onCancelBookingClicked = {
-//                viewModel.onEvent(TokenQrScreenEvent.CancelBookingClicked)
-//            },
-//            onDialogDismissRequest = {
-//                viewModel.onEvent(TokenQrScreenEvent.DismissDialog)
-//            },
-//            onCancelBookingConfirmed = {
-//                viewModel.onEvent(TokenQrScreenEvent.CancelBookingConfirmed)
-//            }
-//        )
-//    }
+    val viewModel: TokenQrScreenViewModel = viewModel(factory = YumaSdk.tokenQrScreenViewModelFactory)
+    val state = viewModel.state.value
+
+    viewModel.uiEvent.collectAsLaunchedEffect(Unit) { event ->
+        when (event) {
+            is TokenQRScreenUiEvent.ShowSnackbar -> {
+                SnackbarController.sendEvent(
+                    event = SnackbarEvent(
+                        message = event.message,
+                    )
+                )
+            }
+
+            TokenQRScreenUiEvent.OnBookingCancelled -> { onBookingCancelled() }
+
+            is TokenQRScreenUiEvent.TokenStatusUpdated -> {
+                if (event.tokenStatus == TokenStatus.SWAP_COMPLETED) {
+                    onSwapCompleted(event.swapTime)
+                }
+            }
+        }
+    }
+
+    if (isHomeTab){
+        TokenQrScreen(
+            tokenNumber = state.tokenNumber.toString(),
+            isCancelBookingDialogVisible = state.cancelBookingDialogVisible,
+            isSwapInProgress = state.isSwapInProgress,
+            onCancelBookingClicked = {
+                viewModel.onEvent(TokenQrScreenEvent.CancelBookingClicked)
+            },
+            onDialogDismissRequest = {
+                viewModel.onEvent(TokenQrScreenEvent.DismissDialog)
+            },
+            onCancelBookingConfirmed = {
+                viewModel.onEvent(TokenQrScreenEvent.CancelBookingConfirmed)
+            }
+        )
+    }
 }
 
 @Composable
