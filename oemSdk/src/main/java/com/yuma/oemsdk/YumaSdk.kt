@@ -24,7 +24,9 @@ import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParam
 import com.yumaoem.feature_home.data.network.HomeRemoteDataSource
 import com.yumaoem.feature_home.data.network.YuzenRemoteDataSource
 import com.yumaoem.feature_home.data.repository.HomeRepositoryImpl
+import com.yumaoem.feature_home.data.repository.PaymentRepositoryImpl
 import com.yumaoem.feature_home.data.repository.YumaBleRepositoryImpl
+import com.yumaoem.feature_home.domain.repository.PaymentRepository
 import com.yumaoem.feature_home.domain.usecase.auto_dialer.AutoDialerRequestUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.CleanupBleSessionUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.InitializeBleSessionUseCase
@@ -39,6 +41,7 @@ import com.yumaoem.feature_home.domain.usecase.logout_user.LogoutUserUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.all_station_markers.GetAllStationsUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.route_info.GetRouteInfoUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.station_operation_status.GetStationOperationStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.payments.payment_home.GetPaymentPlansUseCase
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetSwapHistoryUseCase
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetUserDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase
@@ -49,6 +52,7 @@ import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySw
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewmodel.HomeViewModel
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapViewModel
+import com.yumaoem.feature_home.presentation.payments.payment_home.PaymentHomeViewModel
 import com.yumaoem.feature_home.presentation.profile_screen.ProfileViewModel
 import com.yumaoem.feature_onboarding.data.network.OnboardingRemoteDataSource
 import com.yumaoem.feature_onboarding.data.repository.OnboardingRepositoryImpl
@@ -112,6 +116,7 @@ object YumaSdk {
     internal lateinit var mapViewModelFactory: MapViewModel.Factory
     internal lateinit var profileViewModelFactory: ProfileViewModel.Factory
     internal lateinit var diySwapInProgressViewModelFactory: DiySwapInProgressViewModel.Factory
+    internal lateinit var paymentHomeViewModelFactory: PaymentHomeViewModel.Factory
 
     // Core Services
     internal lateinit var prefManager: YumaPrefUtilApi
@@ -203,6 +208,8 @@ object YumaSdk {
                 commonAnalyticsParamsProvider,
                 loggerApi
             )
+
+            paymentHomeViewModelFactory = buildPaymentHomeViewModel(homeDataSource, prefManager, loggerApi)
 
             isInitialized = true
             Log.d(TAG, "✅ YumaSdk initialized | env=${sdkConfig.environment}")
@@ -360,6 +367,21 @@ object YumaSdk {
                 coreLocationProvider
             ),
             json = jsonConfig
+        )
+    }
+
+    private fun buildPaymentHomeViewModel(
+        homeDataSource: HomeRemoteDataSource,
+        preferenceApi: YumaPrefUtilApi,
+        loggerApi: LoggerApi
+    ): PaymentHomeViewModel.Factory {
+        val paymentRepository: PaymentRepository = PaymentRepositoryImpl(homeDataSource)
+        val getPaymentPlansUseCase: GetPaymentPlansUseCase =
+            GetPaymentPlansUseCase(paymentRepository)
+        return PaymentHomeViewModel.Factory(
+            getPaymentPlansUseCase = getPaymentPlansUseCase,
+            preferenceApi = preferenceApi,
+            loggerApi = loggerApi
         )
     }
 

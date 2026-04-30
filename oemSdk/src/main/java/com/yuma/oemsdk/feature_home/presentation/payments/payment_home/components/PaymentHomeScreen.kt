@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.orFalse
 import com.yumaoem.core_ui.components.buttons.YumaPrimaryButton
 import com.yumaoem.core_ui.theme.color.Colors
@@ -54,43 +56,43 @@ fun PaymentHomeScreenRoot(
     navigateToPlanDetailsScreen: (UiPlan) -> Unit,
     isPaymentsTab: Boolean,
 ) {
-//    val viewModel = koinViewModel<PaymentHomeViewModel>()
-//    val state: PaymentHomeState? by viewModel.state.collectAsState()
-//
-//    LaunchedEffect(isPaymentsTab) {
-//        if (isPaymentsTab) {
-//            viewModel.refreshPaymentData(
-//                shouldShowLoader = false
-//            )
-//        }
-//    }
-//
-//    if (state!= null && isPaymentsTab){
-//        PaymentHomeScreen(
-//            state = state!!,
-//            onPlanSelected = { plan ->
-//                viewModel.onEvent(PaymentHomeEvent.PlanSelected(plan))
-//            },
-//            onProceedClicked = {
-//                viewModel.onEvent(PaymentHomeEvent.ProceedClicked)
-//                if (state!!.selectedPlan!=null)
-//                navigateToPlanDetailsScreen(state!!.selectedPlan!!)
-//            },
-//            onTabChanged = { planGroupId ->
-//                viewModel.onEvent(PaymentHomeEvent.OnTabChanged(planGroupId))
-//            }
-//        )
-//    }
-//    if (state?.isLoading.orFalse()) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .background(Color.White),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            CircularProgressIndicator()
-//        }
-//    }
+    val viewModel:PaymentHomeViewModel = viewModel(factory = YumaSdk.paymentHomeViewModelFactory)
+    val state: PaymentHomeState? by viewModel.state.collectAsState()
+
+    LaunchedEffect(isPaymentsTab) {
+        if (isPaymentsTab) {
+            viewModel.refreshPaymentData(
+                shouldShowLoader = false
+            )
+        }
+    }
+
+    if (state!= null && isPaymentsTab){
+        PaymentHomeScreen(
+            state = state!!,
+            onPlanSelected = { plan ->
+                viewModel.onEvent(PaymentHomeEvent.PlanSelected(plan))
+            },
+            onProceedClicked = {
+                viewModel.onEvent(PaymentHomeEvent.ProceedClicked)
+                if (state!!.selectedPlan!=null)
+                navigateToPlanDetailsScreen(state!!.selectedPlan!!)
+            },
+            onTabChanged = { planGroupId ->
+                viewModel.onEvent(PaymentHomeEvent.OnTabChanged(planGroupId))
+            }
+        )
+    }
+    if (state?.isLoading.orFalse()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
 }
 
 

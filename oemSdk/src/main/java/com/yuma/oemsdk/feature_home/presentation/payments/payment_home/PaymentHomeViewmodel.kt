@@ -1,13 +1,13 @@
 package com.yumaoem.feature_home.presentation.payments.payment_home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.utils.orFalse
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.feature_home.domain.usecase.payments.payment_home.GetPaymentPlansUseCase
-import com.yumaoem.feature_home.presentation.payments.payment_home.state.CurrentPlanState
 import com.yumaoem.feature_home.presentation.payments.payment_home.state.PaymentHomeState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,7 +83,7 @@ class PaymentHomeViewModel(
     private suspend fun getPaymentData(clientVehicleId: Int?, shouldShowLoader: Boolean) {
         getPaymentPlansUseCase(clientVehicleId.toString()).collect(
             onLoading = {
-                if (shouldShowLoader){
+                if (shouldShowLoader) {
                     _state.update { it?.copy(isLoading = true) }
                 }
                 loggerApi.logDWithTag("PaymentHomeViewModel", "Loading")
@@ -117,7 +117,8 @@ class PaymentHomeViewModel(
                     plansSectionHeading = data.plansSectionHeading,
                     planGroups = updatedPlanGroups,
                     footerNotes = data.footerNotes,
-                    selectedPlanGroupId = previouslySelectedGroup ?: data.allPlans.firstOrNull()?.groupName,
+                    selectedPlanGroupId = previouslySelectedGroup
+                        ?: data.allPlans.firstOrNull()?.groupName,
                     selectedPlan = updatedPlanGroups
                         .firstOrNull { it.groupName == previouslySelectedGroup }
                         ?.plans
@@ -128,5 +129,19 @@ class PaymentHomeViewModel(
             }
 
         )
+    }
+
+    class Factory(
+        private val getPaymentPlansUseCase: GetPaymentPlansUseCase,
+        private val preferenceApi: YumaPrefUtilApi,
+        private val loggerApi: LoggerApi
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            PaymentHomeViewModel(
+                getPaymentPlansUseCase = getPaymentPlansUseCase,
+                preferenceApi = preferenceApi,
+                loggerApi = loggerApi
+            ) as T
     }
 }
