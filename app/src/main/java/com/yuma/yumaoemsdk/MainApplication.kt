@@ -13,7 +13,7 @@ class MainApplication : Application() {
         // Initialize Yuma OEM SDK
         val sdkConfig = YumaSdkConfiguration.Builder()
             .setClientKey("DUMMY_CLIENT_KEY_123") // TODO: Replace with real key
-            .setMapApiKey("AIzaSyDgUJfdi2Ba9bh5FrzTIofMDCIFDcK02kM")
+            .setMapApiKey("AIzaSyBTmktjliqw55JQNiCqDrdyJNCZYcqeFVE")
             .setEnvironment(if(BuildConfig.DEBUG) Environment.DEV else Environment.PROD)
             .build()
             

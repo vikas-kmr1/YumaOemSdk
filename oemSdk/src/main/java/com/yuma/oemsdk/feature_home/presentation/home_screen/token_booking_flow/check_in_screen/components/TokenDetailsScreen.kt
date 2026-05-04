@@ -116,7 +116,7 @@ fun BookedTokenDetailsScreenRoot(
     val bluetoothConnectState = permissionViewModel.bluetoothConnectState
     val bluetoothScanState = permissionViewModel.bluetoothScanState
 
-    checkAndRequestBluetoothPermissions(
+    CheckAndRequestBluetoothPermissions(
        bluetoothScanState = bluetoothScanState,
        permissionViewModel = permissionViewModel,
        bluetoothConnectState = bluetoothConnectState,
@@ -158,7 +158,7 @@ fun BookedTokenDetailsScreenRoot(
 }
 
 @Composable
-private fun checkAndRequestBluetoothPermissions(
+private fun CheckAndRequestBluetoothPermissions(
     bluetoothScanState: PermissionState,
     permissionViewModel: HomeScreenPermissionViewModel,
     bluetoothConnectState: PermissionState,

@@ -30,6 +30,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cashfree.pg.core.api.callback.CFCheckoutResponseCallback
 import com.cashfree.pg.core.api.utils.CFErrorResponse
 import com.google.android.gms.common.api.ResolvableApiException
@@ -46,19 +48,32 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import com.yuma.oemsdk.navigation.SdkNavHost
+import com.yumaoem.core.utils.app_utils.isLocationEnabled
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.global_events.EnableBluetoothEvent
 import com.yumaoem.core.utils.global_events.HideKeyboard
 import com.yumaoem.core.utils.global_events.ShowEnableLocationDialog
 import com.yumaoem.core.utils.global_events.controller.EventController
+import com.yumaoem.core.utils.handle_permissions.PermissionsHandlerViewModel
+import com.yumaoem.core.utils.handle_permissions.RequestedPermissionState
 import com.yumaoem.core.utils.lifecycle.GetLifecycleEvents
 import com.yumaoem.core.utils.network_connection.ConnectionStatus
 import com.yumaoem.core.utils.network_connection.NetworkStatusProvider
+import com.yumaoem.core_ui.components.permission_denied_dlalog.OpenSettingsDialog
 import com.yumaoem.core_ui.theme.YumaAppTheme
 import com.yumaoem.core_ui.utils.snackbar.ObserveAsEvents
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.core_ui.utils.snackbar.composables.ErrorSnackBar
+import dev.icerock.moko.permissions.Permission
+import dev.icerock.moko.permissions.bluetooth.BLUETOOTH_ADVERTISE
+import dev.icerock.moko.permissions.bluetooth.BLUETOOTH_CONNECT
+import dev.icerock.moko.permissions.bluetooth.BLUETOOTH_LE
+import dev.icerock.moko.permissions.bluetooth.BLUETOOTH_SCAN
+import dev.icerock.moko.permissions.compose.BindEffect
+import dev.icerock.moko.permissions.compose.rememberPermissionsControllerFactory
+import dev.icerock.moko.permissions.location.LOCATION
+import dev.icerock.moko.permissions.notifications.REMOTE_NOTIFICATION
 import kotlinx.coroutines.launch
 
 /**
@@ -248,6 +263,7 @@ private fun App(finish: () -> Unit) {
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            HandlePermissions()
             ObserveNetworkStatus()
             startLocationRequests()
             val snackbarHostState = remember {
@@ -287,6 +303,88 @@ private fun App(finish: () -> Unit) {
         )
     }
 }
+
+
+@Composable
+private fun HandlePermissions(
+    requiredPermissions: List<Permission> = listOf(
+        Permission.LOCATION,
+        Permission.BLUETOOTH_SCAN,
+        Permission.BLUETOOTH_LE,
+        Permission.BLUETOOTH_CONNECT,
+        Permission.BLUETOOTH_ADVERTISE,
+        Permission.REMOTE_NOTIFICATION
+    ),
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    val factory = rememberPermissionsControllerFactory()
+    val controller = remember(factory) { factory.createPermissionsController() }
+    BindEffect(controller)
+    val permissionViewModel = viewModel {
+        PermissionsHandlerViewModel(controller)
+    }
+
+
+    val showPermissionDialog = remember { mutableStateOf(false) }
+    var dialogTitle = remember { "" }
+
+    GetLifecycleEvents(
+        lifecycleOwner = LocalLifecycleOwner.current,
+        onStart = {
+            permissionViewModel.checkAndRequestAllPermissions(requiredPermissions) { permissionState ->
+                when (permissionState) {
+                    RequestedPermissionState.Granted -> {
+                        if (isLocationEnabled().not()) {
+                            coroutineScope.launch {
+                                EventController.sendEvent(
+                                    ShowEnableLocationDialog(
+                                    onLocationEnabled = {
+                                        /*     checkIfUserLoggedIn(
+                                                 locationProvider,
+                                                 viewModel
+                                             )*/
+                                    },
+                                    onLocationDenied = {
+                                        coroutineScope.launch {
+                                            SnackbarController.sendEvent(
+                                                SnackbarEvent(
+                                                    message = "Turn on location to continue"
+                                                )
+                                            )
+                                        }
+                                    }
+                                ))
+                            }
+                        } else {
+                            /* checkIfUserLoggedIn(
+                                 locationProvider,
+                                 viewModel
+                             )*/
+                        }
+                    }
+
+                    is RequestedPermissionState.DeniedAlways -> {
+                        dialogTitle = "please grant ${permissionState.permissions} to continue"
+                        showPermissionDialog.value = true
+                    }
+                }
+            }
+        })
+
+    if (showPermissionDialog.value) {
+        OpenSettingsDialog(
+            title = dialogTitle,
+            onDismissRequest = {
+                showPermissionDialog.value = false
+            },
+            onOpenSettingsClicked = {
+                controller.openAppSettings()
+            }
+        )
+    }
+}
+
 
 @Composable
 private fun ObserveSnackBarEvents(
