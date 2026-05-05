@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,7 +37,7 @@ fun SomethingWentWrongModalBottomSheet(
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { false }
+        confirmValueChange = { it != SheetValue.Hidden }
     )
 
     ModalBottomSheet(
@@ -71,7 +72,7 @@ fun BluetoothConnectionFailedModalBottomSheet(
             onDismissRequest = onDismiss,
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                confirmValueChange = { false }
+                confirmValueChange = { it != SheetValue.Hidden }
             )
 
         ) {
@@ -101,7 +102,7 @@ fun IncorrectModalBottomSheet(
             onDismissRequest = {},
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                confirmValueChange = { false }
+                confirmValueChange = { it != SheetValue.Hidden }
             )
         ) {
             ErrorBottomSheetContent(
@@ -127,7 +128,7 @@ fun ScanBatteryTryAgainModalBottomSheet(
             onDismissRequest = {},
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                confirmValueChange = { false }
+                confirmValueChange = { it != SheetValue.Hidden }
             )
         ) {
             ErrorBottomSheetContent(

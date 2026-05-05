@@ -6,29 +6,31 @@ sealed class YumaResponse {
         val message: String,
         val id: Int? = null
     ) : YumaResponse()
-    
+
     object PermissionGranted : YumaResponse()
-    
+
     object LeScan : YumaResponse()
     object QuickScanning : YumaResponse()
     object ScanningCompleted : YumaResponse()
-    
+
     object Connected : YumaResponse()
     object SessionCleared : YumaResponse()
     object ServiceDiscovered : YumaResponse()
-    
+
     object NetworkSuccess : YumaResponse()
-    
+
     object SDKInitialized : YumaResponse()
-    
-    object SubmitSuccess : YumaResponse()
-    
+
+    data class SubmitSuccess(val id: SubmitType, val isMultiYCUSwap: Boolean?, val partialCompletedCount: Int?) : YumaResponse()
+
     data class SyncDifferenceRes(val syncDiff: CommonSyncDifference) : YumaResponse()
     data class ResponseState(val cuResponse: String) : YumaResponse()
 
     object InitSuccess : YumaResponse()
 
     object ConfigSet : YumaResponse()
+
+    data class MultiYcuSwap(val isMultiYcuSwap: Boolean, val partialCompletedCount: Int): YumaResponse()
 
     companion object {
         // Error codes
@@ -41,7 +43,7 @@ sealed class YumaResponse {
         const val ERROR_SYSTEM_SYNC_FAILED = "SYSTEM_SYNC_FAILED"
         const val ERROR_ACCESS_TYPE_FAILED = "ACCESS_TYPE_FAILED"
         const val ERROR_SWAP_UNAVAILABLE = "SWAP_UNAVAILABLE"
-        
+
         fun permissionNotGranted(message: String = "Required permissions not granted") = Error(ERROR_PERMISSION_NOT_GRANTED, message)
         fun quickScanningFailed(message: String = "Quick scanning failed") = Error(ERROR_QUICK_SCANNING_FAILED, message)
         fun connectionFailed(message: String = "Connection failed") = Error(ERROR_CONNECTION_FAILED, message)

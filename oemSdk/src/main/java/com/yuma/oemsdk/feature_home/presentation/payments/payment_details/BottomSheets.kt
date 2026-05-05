@@ -3,6 +3,7 @@ package com.yumaoem.feature_home.presentation.payments.payment_details
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -26,7 +27,7 @@ fun CouldNotFetchPaymentStatus(
             onDismissRequest = {  },
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                confirmValueChange = { false }
+                confirmValueChange = { it != SheetValue.Hidden }
             ),
         ) {
             BackHandler(enabled = true) {}
