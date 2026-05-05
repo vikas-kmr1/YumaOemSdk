@@ -48,6 +48,7 @@ import com.yumaoem.feature_home.domain.usecase.checkin_screen.CancelTokenBooking
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.CheckInUserUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.ObserveTokenExpiryCountdownUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.ValidateLocationUseCase
+import com.yumaoem.feature_home.domain.usecase.diy_flow.StartDiyFlowUseCase
 import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.logout_user.LogoutUserUseCase
 import com.yumaoem.feature_home.domain.usecase.maps.all_station_markers.GetAllStationsUseCase
@@ -58,12 +59,14 @@ import com.yumaoem.feature_home.domain.usecase.payments.payment_home.GetPaymentP
 import com.yumaoem.feature_home.domain.usecase.payments.payment_status.GetPaymentStatusUseCase
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetSwapHistoryUseCase
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetUserDetailsUseCase
+import com.yumaoem.feature_home.domain.usecase.revert_token_status.RevertTokenCheckInStatusUseCase
 import com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.tag_battery.MapNewBatteriesOnBikeUseCase
 import com.yumaoem.feature_home.domain.usecase.token_booking.book_token.BookTokenUseCase
 import com.yumaoem.feature_home.domain.usecase.token_status.GetTokenStatusUseCase
 import com.yumaoem.feature_home.presentation.diy_flow.CommonSessionConfigFactory
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressViewModel
+import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanQrViewModel
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewmodel.HomeViewModel
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.MapViewModel
@@ -140,7 +143,7 @@ object YumaSdk {
     internal lateinit var tokenDetailsViewModelFactory: TokenDetailsViewModel.Factory
     internal lateinit var tokenQrScreenViewModelFactory: TokenQrScreenViewModel.Factory
     internal lateinit var tagBatteryViewModelFactory: TagBatteryViewModel.Factory
-
+    internal lateinit var scanQrViewModelFactory: ScanQrViewModel.Factory
     // Core Services
     internal lateinit var prefManager: YumaPrefUtilApi
     internal lateinit var coreLocationProvider: CoreLocationProvider
@@ -297,6 +300,14 @@ object YumaSdk {
                 getBatteryDetailsUseCase = getBatteryDetailsUseCase,
             )
 
+            scanQrViewModelFactory = ScanQrViewModel.Factory(
+                startDiyFlowUseCase = StartDiyFlowUseCase(homeRepository),
+                revertTokenCheckInStatusUseCase = RevertTokenCheckInStatusUseCase(homeRepository),
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                autoDialerRequestUseCase = autoDialerRequestUseCase,
+                preferenceApi = prefManager,
+                loggerApi = loggerApi,
+            )
             soundPlayer = SoundPlayer()
 
             isInitialized = true

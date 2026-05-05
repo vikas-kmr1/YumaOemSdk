@@ -39,24 +39,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.yuma.oemsdk.R
-
+import com.yuma.oemsdk.YumaSdk
+import com.yuma.oemsdk.feature_home.presentation.diy_flow.scan_qr.drawQRScannerOverlay
 import com.yumaoem.core.utils.global_events.HideBottomBar
 import com.yumaoem.core.utils.global_events.ShowBottomBar
 import com.yumaoem.core.utils.global_events.bottom_bar_event.BottomBarEventController
 import com.yumaoem.core.utils.noRippleDebounceClickable
 import com.yumaoem.core_ui.components.snackbar.SuccessSnackbar
-
 import com.yumaoem.core_ui.theme.color.Colors
 import com.yumaoem.core_ui.theme.color.LocalColors
 import com.yumaoem.core_ui.theme.typography.LocalTypography
@@ -67,6 +67,7 @@ import com.yumaoem.core_ui.utils.animation.defaultPopExitTransition
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapNeedHelpFooter
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.components.GetCallbackContentModalBottomSheet
 import com.yumaoem.feature_home.presentation.diy_flow.error_bottom_sheets.IncorrectModalBottomSheet
 import com.yumaoem.feature_home.presentation.diy_flow.scan_illustration_screen.DiyScanIllustrationScreen
@@ -78,9 +79,10 @@ import kotlinx.coroutines.launch
 import qrscanner.CameraLens
 import qrscanner.QrScanner
 
-val scope = CoroutineScope(SupervisorJob()+ Dispatchers.Main)
+val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalAnimationApi::class,
+@OptIn(
+    ExperimentalComposeUiApi::class, ExperimentalAnimationApi::class,
     ExperimentalAnimationApi::class
 )
 @Composable
@@ -88,8 +90,11 @@ fun ScanMachineQrScreenRoot(
     navigateToSwapInProgress: (String) -> Unit,
     onTokenCheckInReverted: () -> Unit,
     isHomeTab: Boolean
-) {}/*
-    val viewModel = koinViewModel<ScanQrViewModel>()
+) {
+    val viewModel: ScanQrViewModel = viewModel(
+        factory = YumaSdk.scanQrViewModelFactory
+    )
+
     val uiState = viewModel.uiState.collectAsState()
     val showIllustrationScreen = uiState.value.showIllustrationScreen
 
@@ -146,7 +151,7 @@ fun ScanMachineQrScreenRoot(
     }
 
 
-    if (isHomeTab){
+    if (isHomeTab) {
         Scaffold(
             snackbarHost = {
                 SnackbarHost(snackbarHostState) { data ->
@@ -154,11 +159,12 @@ fun ScanMachineQrScreenRoot(
                 }
             }
         )
-        {
+        { innerPadding ->
             if (showBlank.value) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(innerPadding)
                 )
             } else {
                 AnimatedContent(
@@ -177,8 +183,10 @@ fun ScanMachineQrScreenRoot(
                         DiyScanIllustrationScreen(
                             onNextClicked = { viewModel.changeShowIllustrationScreenStatus(status = false) }
                         )
-                        scope.launch {
-                            BottomBarEventController.sendEvent(ShowBottomBar)
+                        LaunchedEffect(Unit) {
+                            scope.launch {
+                                BottomBarEventController.sendEvent(ShowBottomBar)
+                            }
                         }
                     } else {
                         ScanMachineQrScreen(
@@ -186,7 +194,7 @@ fun ScanMachineQrScreenRoot(
                             onBackClicked = { viewModel.onEvent(ScanQrEvent.OnBackClicked) },
                             onFlashLightClicked = { viewModel.onEvent(ScanQrEvent.ToggleFlashlight) },
                             onScanCompleted = { qrCode, isQrScan ->
-                                viewModel.onEvent(ScanQrEvent.OnScanCompleted(qrCode,isQrScan))
+                                viewModel.onEvent(ScanQrEvent.OnScanCompleted(qrCode, isQrScan))
                             },
                             onRetryScanClicked = {
                                 viewModel.onEvent(ScanQrEvent.DismissBottomSheet)
@@ -202,8 +210,10 @@ fun ScanMachineQrScreenRoot(
                                 viewModel.onEvent(ScanQrEvent.OnCustomerSupportClicked)
                             }
                         )
-                        scope.launch {
-                            BottomBarEventController.sendEvent(HideBottomBar)
+                        LaunchedEffect(Unit) {
+                            scope.launch {
+                                BottomBarEventController.sendEvent(HideBottomBar)
+                            }
                         }
                     }
                 }
@@ -217,7 +227,7 @@ fun ScanMachineQrScreenRoot(
 private fun ScanMachineQrScreen(
     bottomSheet: ScanQrUiStateBottomSheet,
     modifier: Modifier = Modifier,
-    onRetryScanClicked:()-> Unit,
+    onRetryScanClicked: () -> Unit,
     onBackClicked: () -> Unit = {},
     onFlashLightClicked: () -> Unit = {},
     onScanCompleted: (String, Boolean) -> Unit,
@@ -242,7 +252,7 @@ private fun ScanMachineQrScreen(
                 flashlightOn = isFlashLightOn,
                 cameraLens = CameraLens.Back,
                 openImagePicker = false,
-                onCompletion = { onScanCompleted(it,true) },
+                onCompletion = { onScanCompleted(it, true) },
                 onFailure = {},
                 imagePickerHandler = {},
                 customOverlay = {
@@ -264,7 +274,7 @@ private fun ScanMachineQrScreen(
                 onValueChange = { qrNumber = it },
                 onEnterPressed = {
                     println("Enter pressed with value: $qrNumber")
-                    onScanCompleted(qrNumber,false)
+                    onScanCompleted(qrNumber, false)
                 },
                 keyboardIcon = painterResource(R.drawable.ic_keyboard_alt),
                 modifier = Modifier
@@ -294,7 +304,7 @@ private fun ScanMachineQrScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScanBottomSheetHost(
-    onDismiss: ()-> Unit,
+    onDismiss: () -> Unit,
     onReceiveCallClicked: (String) -> Unit,
     bottomSheet: ScanQrUiStateBottomSheet,
     onRetryScanClicked: () -> Unit
@@ -309,11 +319,13 @@ fun QrScanBottomSheetHost(
                     onReceiveCallClicked = onReceiveCallClicked
                 )
             }
+
             ScanQrUiStateBottomSheet.IncorrectQRModalBottomSheet -> {
                 IncorrectModalBottomSheet(
                     onRetry = onRetryScanClicked
                 )
             }
+
             ScanQrUiStateBottomSheet.None -> {}
         }
     }
@@ -418,4 +430,3 @@ fun YcuImage(
     )
 }
 
-*/
