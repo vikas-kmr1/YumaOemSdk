@@ -10,6 +10,14 @@ class NavigationStateRepository() {
     val currentHomeDestination: StateFlow<HomeScreenDestination> =
         _currentHomeDestination.asStateFlow()
 
+    var currentBatterySwap: Int = 1
+    var isMultiYcuFlow: Boolean = false
+
+    fun resetMultiYcuState() {
+        currentBatterySwap = 1
+        isMultiYcuFlow = false
+    }
+
     fun updateHomeDestination(destination: HomeScreenDestination) {
         if (_currentHomeDestination.value != destination) {
             _currentHomeDestination.value = destination

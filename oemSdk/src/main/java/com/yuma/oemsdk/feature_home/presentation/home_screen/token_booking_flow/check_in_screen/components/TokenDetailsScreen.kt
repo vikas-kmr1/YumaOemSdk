@@ -1,5 +1,6 @@
 package com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yuma.oemsdk.R
 import com.yuma.oemsdk.YumaSdk
+import com.yuma.oemsdk.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.dialogs.ScanBatteryBottomSheet
+import com.yuma.oemsdk.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.dialogs.WrongBatteryBottomSheet
+import com.yumaoem.core.utils.global_events.HideBottomBar
+import com.yumaoem.core.utils.global_events.ShowBottomBar
+import com.yumaoem.core.utils.global_events.bottom_bar_event.BottomBarEventController
 import com.yumaoem.core.utils.handle_permissions.HomeScreenPermissionViewModel
 import com.yumaoem.core.utils.noRippleDebounceClickable
 import com.yumaoem.core.utils.time_utils.formatTimeFromSeconds
@@ -50,10 +56,14 @@ import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.feature_home.domain.model.maps.all_station_markers.YumaStationMarker
 import com.yumaoem.feature_home.domain.model.maps.all_station_markers.YumaStationStatus
+import com.yumaoem.feature_home.presentation.diy_flow.diy_scan_battery_screen.DiyScanBatteryScreen
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.components.GetCallbackContentModalBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.scope
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.ChargingStationState
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.station_states.operational_station.OpenStationStateChip
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.station_states.station_info_bottom_sheet_common_components.GoogleMapLogoIcon
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.LatLong
+import com.yumaoem.feature_home.presentation.home_screen.tag_battery.DiyScanBatteryIntent
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsScreenEvent
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsScreenUiEvent
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsViewModel
@@ -66,6 +76,7 @@ import dev.icerock.moko.permissions.PermissionState
 import dev.icerock.moko.permissions.PermissionsController
 import dev.icerock.moko.permissions.compose.BindEffect
 import dev.icerock.moko.permissions.compose.rememberPermissionsControllerFactory
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -76,6 +87,7 @@ fun BookedTokenDetailsScreenRoot(
     isHomeTab: Boolean
 ) {
     val viewModel: TokenDetailsViewModel = viewModel(factory = YumaSdk.tokenDetailsViewModelFactory)
+
     val state = viewModel.state
 
     viewModel.uiEvent.collectAsLaunchedEffect(Unit) { event ->
@@ -102,6 +114,10 @@ fun BookedTokenDetailsScreenRoot(
         }
     }
 
+    BackHandler(enabled = state.showBatteryVerificationScreen) {
+        viewModel.onEvent(TokenDetailsScreenEvent.OnBackClicked)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.sendTokenScreenViewed()
     }
@@ -116,49 +132,138 @@ fun BookedTokenDetailsScreenRoot(
     val bluetoothConnectState = permissionViewModel.bluetoothConnectState
     val bluetoothScanState = permissionViewModel.bluetoothScanState
 
-    CheckAndRequestBluetoothPermissions(
-       bluetoothScanState = bluetoothScanState,
-       permissionViewModel = permissionViewModel,
-       bluetoothConnectState = bluetoothConnectState,
-       controller = controller
+    checkAndRequestBluetoothPermissions(
+        bluetoothScanState = bluetoothScanState,
+        permissionViewModel = permissionViewModel,
+        bluetoothConnectState = bluetoothConnectState,
+        controller = controller
     )
 
-    if (isHomeTab){
-        BookedTokenDetailsScreen(
-            tokenNumber = state.bookedTokenDetails?.tokenNumber.orEmpty(),
-            tokenExpiryTime = state.expiryTime,
-            isCheckInProgress = state.isCheckInButtonLoading,
-            station = state.bookedTokenDetails?.bookingStation,
-            dialogState = state.dialogState,
-            isDiySwap = state.idDiySwap,
-            onDismissDialog = {
-                viewModel.onEvent(TokenDetailsScreenEvent.DismissDialog)
-            },
-            onBookingExpiryTryAgainClicked = {
-                viewModel.onEvent(TokenDetailsScreenEvent.BookingExpiryTryAgainClicked)
-                onBookingCancelled()
-            },
-            onCancelBookingClicked = {
-                viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingClicked)
-            },
-            onCancelBookingConfirmed = {
-                viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingConfirmed)
-            },
-            onCheckInAtStationClicked = {
-                viewModel.onEvent(TokenDetailsScreenEvent.CheckInAtStationClicked)
-            },
-            onGetDirectionsClicked = {
-                viewModel.onEvent(TokenDetailsScreenEvent.GetDirectionsClicked)
-            },
-            onRetryBeaconSearchClicked = {
-                viewModel.onEvent(TokenDetailsScreenEvent.NoBeaconFoundRetry)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        if (isHomeTab) {
+            if (state.showBatteryVerificationScreen.not()) {
+                BookedTokenDetailsScreen(
+                    tokenNumber = state.bookedTokenDetails?.tokenNumber.orEmpty(),
+                    tokenExpiryTime = state.expiryTime,
+                    isCheckInProgress = state.isCheckInButtonLoading,
+                    station = state.bookedTokenDetails?.bookingStation,
+                    dialogState = state.dialogState,
+                    isDiySwap = state.idDiySwap,
+                    onDismissDialog = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.DismissDialog)
+                    },
+                    onBookingExpiryTryAgainClicked = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.BookingExpiryTryAgainClicked)
+                        onBookingCancelled()
+                    },
+                    onCancelBookingClicked = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingClicked)
+                    },
+                    onCancelBookingConfirmed = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.CancelBookingConfirmed)
+                    },
+                    onCheckInAtStationClicked = {
+                        if (state.isBatteryVerificationRequired && state.batteryVerificationCompleted.not()) {
+                            viewModel.onEvent(TokenDetailsScreenEvent.OnBatteryVerification)
+                        } else {
+                            viewModel.onEvent(TokenDetailsScreenEvent.CheckInAtStationClicked)
+                        }
+                    },
+                    onGetDirectionsClicked = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.GetDirectionsClicked)
+                    },
+                    onRetryBeaconSearchClicked = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.NoBeaconFoundRetry)
+                    }
+                )
+                LaunchedEffect(Unit) {
+                    scope.launch {
+                        BottomBarEventController.sendEvent(ShowBottomBar)
+                    }
+                }
+            } else {
+                DiyScanBatteryScreen(
+                    onBackClicked = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.OnBackClicked)
+                    },
+                    onFlashLightClicked = {
+                        viewModel.onEvent(DiyScanBatteryIntent.OnFlashLightClicked)
+                    },
+                    onScanCompleted = { result, isManualEntry ->
+                        viewModel.onEvent(
+                            DiyScanBatteryIntent.OnScanCompleted(
+                                result,
+                                isManualEntry
+                            )
+                        )
+                    },
+                    onCustomerSupportClicked = {
+                        viewModel.showCustomerSupportBottomSheet()
+                    },
+                    showCustomerSupport = true,
+                    showManualInputField = false,
+                    isFlashLightOn = state.isFlashLightOn,
+                    isLoading = state.isLoading,
+                    isMultiBatteryFlow = state.isMultiBatteryFlow,
+                    scannedBatteryCount = state.batteryQrList.size,
+                    totalBatteryCount = state.totalBatteryCount,
+                    isDischargedBatteryScan = true
+                )
+                LaunchedEffect(Unit) {
+                    scope.launch {
+                        BottomBarEventController.sendEvent(HideBottomBar)
+                    }
+                }
             }
-        )
+        }
+
+        when (state.dialogState) {
+
+            DialogState.WrongBattery -> {
+                WrongBatteryBottomSheet(
+                    onDismissRequest = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.DismissDialog)
+                    },
+                    onTryAgainClicked = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.ResetScanState)
+                    }
+                )
+            }
+
+            DialogState.ScanBattery -> {
+                ScanBatteryBottomSheet(
+                    onDismissRequest = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.DismissDialog)
+                    },
+                    onTryAgainClicked = {
+                        viewModel.onEvent(TokenDetailsScreenEvent.ResetScanState)
+                    }
+                )
+            }
+
+            is DialogState.CustomerSupport -> {
+                GetCallbackContentModalBottomSheet(
+                    mobileNumber = state.dialogState.mobileNumber,
+                    isLoading = state.dialogState.isLoading,
+                    onDismiss = {
+                        viewModel.dismissBottomSheet()
+                    },
+                    onReceiveCallClicked = {
+                        viewModel.requestCall(it)
+                    }
+                )
+            }
+
+            else -> {}
+        }
     }
 }
 
+
 @Composable
-private fun CheckAndRequestBluetoothPermissions(
+private fun checkAndRequestBluetoothPermissions(
     bluetoothScanState: PermissionState,
     permissionViewModel: HomeScreenPermissionViewModel,
     bluetoothConnectState: PermissionState,
@@ -166,7 +271,7 @@ private fun CheckAndRequestBluetoothPermissions(
 ) {
     val showPermissionDialog = remember { mutableStateOf(false) }
 
-    if(showPermissionDialog.value){
+    if (showPermissionDialog.value) {
         OpenSettingsDialog(
             title = "Bluetooth",
             onDismissRequest = {
@@ -187,14 +292,15 @@ private fun CheckAndRequestBluetoothPermissions(
         PermissionState.Granted -> {
             when (bluetoothConnectState) {
                 PermissionState.NotDetermined, PermissionState.NotGranted,
-                PermissionState.Denied, -> {
+                PermissionState.Denied,
+                    -> {
                     permissionViewModel.requestBluetoothConnect()
                 }
 
                 PermissionState.Granted -> {}
 
                 PermissionState.DeniedAlways -> {
-                   showPermissionDialog.value = true
+                    showPermissionDialog.value = true
                 }
             }
         }
@@ -210,12 +316,11 @@ private fun CheckAndRequestBluetoothPermissions(
 }
 
 
-
 @Composable
 private fun BookedTokenDetailsScreen(
-    tokenNumber:String,
-    tokenExpiryTime:String,
-    isCheckInProgress:Boolean,
+    tokenNumber: String,
+    tokenExpiryTime: String,
+    isCheckInProgress: Boolean,
     isDiySwap: Boolean,
     station: YumaStationMarker?,
     dialogState: DialogState,
@@ -229,7 +334,7 @@ private fun BookedTokenDetailsScreen(
 ) {
     Box(
         modifier = Modifier.fillMaxHeight()
-    ){
+    ) {
         when (dialogState) {
             is DialogState.ReachStation -> ReachStationModalBottomSheet(
                 title = stringResource(R.string.please_reach_the_station_to_confirm_booking),
@@ -237,10 +342,12 @@ private fun BookedTokenDetailsScreen(
                 onDismissRequest = onDismissDialog,
                 onOkClicked = onDismissDialog
             )
+
             is DialogState.CancelBookingConfirmation -> CancelBookingConfirmationModalBottomSheet(
                 onDismissRequest = onDismissDialog,
                 onCancelBookingConfirmed = onCancelBookingConfirmed
             )
+
             is DialogState.TokenExpired -> TokenExpiredModalBottomSheet(
                 onDismissRequest = onDismissDialog,
                 onBookingExpiryTryAgainClicked = onBookingExpiryTryAgainClicked
@@ -254,7 +361,9 @@ private fun BookedTokenDetailsScreen(
                     onOkClicked = onRetryBeaconSearchClicked
                 )
             }
+
             DialogState.None -> {}
+            else -> {}
         }
 
         Column(
@@ -263,7 +372,7 @@ private fun BookedTokenDetailsScreen(
                 .align(Alignment.BottomCenter),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            if (isDiySwap){
+            if (isDiySwap) {
                 DiyCheckInScreen(
                     modifier = Modifier
                         .padding(top = 54.dp)
@@ -318,7 +427,8 @@ private fun BookedTokenDetailsScreen(
                                     .padding(horizontal = LocalDimensions.current.dimen20dp)
                                     .fillMaxWidth(),
                                 stationName = station?.stationName.orEmpty(),
-                                stationClosingTime = station?.stationCurrentStatus?.nextClosingTime?.formatTimeFromSeconds().toString(),
+                                stationClosingTime = station?.stationCurrentStatus?.nextClosingTime?.formatTimeFromSeconds()
+                                    .toString(),
                                 onDirectionsClicked = onGetDirectionsClicked
                             )
                         }
@@ -331,9 +441,9 @@ private fun BookedTokenDetailsScreen(
                 modifier = Modifier.wrapContentHeight(),
                 isDiySwap = isDiySwap,
                 isCheckInProgress = isCheckInProgress,
-               onGetDirectionsClicked = onGetDirectionsClicked,
-               onCheckInAtStationClicked = onCheckInAtStationClicked,
-               onCancelBookingClicked = onCancelBookingClicked
+                onGetDirectionsClicked = onGetDirectionsClicked,
+                onCheckInAtStationClicked = onCheckInAtStationClicked,
+                onCancelBookingClicked = onCancelBookingClicked
             )
         }
     }
@@ -371,11 +481,12 @@ private fun TokenDetailsScreenFooterView(
     modifier: Modifier = Modifier,
     onCheckInAtStationClicked: () -> Unit,
     onCancelBookingClicked: () -> Unit,
-){
+) {
     Column(
         modifier = modifier
     ) {
-        val buttonText = if (isDiySwap) "Start swap" else stringResource(R.string.check_in_at_station)
+        val buttonText =
+            if (isDiySwap) "Start swap" else stringResource(id = R.string.check_in_at_station)
         YumaPrimaryButton(
             isLoading = isCheckInProgress,
             buttonText = buttonText,
@@ -465,7 +576,7 @@ fun TrailingIcon(
     }
 }
 
-@Preview()
+@Preview(showBackground = true)
 @Composable
 private fun PreviewBookedTokenDetailsScreen_Normal() {
     val dummyStation = YumaStationMarker(
@@ -498,7 +609,7 @@ private fun PreviewBookedTokenDetailsScreen_Normal() {
 
 }
 
-@Preview()
+@Preview(showBackground = true)
 @Composable
 private fun PreviewBookedTokenDetailsScreen_Diy() {
     val dummyStation = YumaStationMarker(
@@ -528,4 +639,3 @@ private fun PreviewBookedTokenDetailsScreen_Diy() {
         )
     }
 }
-

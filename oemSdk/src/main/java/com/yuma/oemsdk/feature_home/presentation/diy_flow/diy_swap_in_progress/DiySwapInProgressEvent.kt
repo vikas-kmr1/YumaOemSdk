@@ -7,4 +7,5 @@ sealed class DiySwapInProgressEvent {
     data object ToggleFlashlight: DiySwapInProgressEvent()
     data object RetryBatteryScan: DiySwapInProgressEvent()
     data object ToggleBikeDetailsBottomSheet: DiySwapInProgressEvent()
+    data object OnContinueClicked: DiySwapInProgressEvent()
 }

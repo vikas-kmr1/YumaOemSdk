@@ -9,6 +9,7 @@ import com.yumaoem.core.utils.global_events.HideKeyboard
 import com.yumaoem.core.utils.global_events.controller.EventController
 import com.yumaoem.core.utils.orFalse
 import com.yumaoem.core.utils.orZero
+import com.yumaoem.core.utils.sound.playBeep
 import com.yumaoem.core.utils.vibration.vibrate
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
@@ -45,6 +46,7 @@ class ScanQrViewModel(
     private val loggerApi: LoggerApi
 ) : ViewModel() {
 
+
     private val _uiState = MutableStateFlow(ScanQrUiState())
     val uiState: StateFlow<ScanQrUiState> = _uiState.asStateFlow()
 
@@ -60,12 +62,24 @@ class ScanQrViewModel(
             }
 
             is ScanQrEvent.OnBackClicked -> {
-                revertTokenStatus()
+                if(_uiState.value.isMultiYcuSwap && _uiState.value.currentBatterySwap > 1){
+                    _uiState.value = _uiState.value.copy(
+                        dialog = ScanQrUiStateDialog.ScanQrCodeDialog
+                    )
+                }else {
+                    revertTokenStatus()
+                }
             }
 
             is ScanQrEvent.DismissBottomSheet -> {
                 _uiState.value = _uiState.value.copy(
                     bottomSheet = None
+                )
+            }
+
+            is ScanQrEvent.DismissDialog -> {
+                _uiState.value = _uiState.value.copy(
+                    dialog = ScanQrUiStateDialog.None
                 )
             }
 
@@ -78,10 +92,11 @@ class ScanQrViewModel(
                             isQrScan = event.isQrScan
                         )
                     }
-                    vibrate(200)
                     _uiState.value = _uiState.value.copy(
                         scannedQrCode = event.result
                     )
+                    vibrate(200)
+                    playBeep()
                     if (isValidCode(event.result)) {
                         viewModelScope.launch {
                             startDiyFlow(event.result)
@@ -124,6 +139,15 @@ class ScanQrViewModel(
             is ScanQrEvent.OnAutoDialerRequestReceived -> {
                 requestCall(event.contactNumber)
             }
+        }
+    }
+
+    fun setMultiYcuArgs (isMultiYcuSwap: Boolean, currentBatterySwap: Int) {
+        _uiState.update {
+            it.copy(
+                isMultiYcuSwap = isMultiYcuSwap,
+                currentBatterySwap = currentBatterySwap
+            )
         }
     }
 
@@ -190,7 +214,7 @@ class ScanQrViewModel(
                 onLoading = {},
                 onSuccess = {
                     val tokenDetails = preferenceApi.getBookedTokenDetails()
-                    if (tokenDetails != null) {
+                    if(tokenDetails != null) {
                         preferenceApi.saveBookedTokenDetails(
                             tokenDetails.copy(
                                 tokenExpiryTimeStamp = it.expiredTimeStamp.orZero()
@@ -217,14 +241,11 @@ class ScanQrViewModel(
             _uiState.value = _uiState.value.copy(
                 showIllustrationScreen = isNewDiyUser
             )
-            loggerApi.logDWithTag(
-                "ScanQrViewModel",
-                "isNewDiyUser: $isNewDiyUser, showIllustrationScreen: ${_uiState.value.showIllustrationScreen}"
-            )
+            loggerApi.logDWithTag("ScanQrViewModel","isNewDiyUser: $isNewDiyUser, showIllustrationScreen: ${_uiState.value.showIllustrationScreen}")
         }
     }
 
-    fun changeShowIllustrationScreenStatus(status: Boolean) {
+    fun changeShowIllustrationScreenStatus(status:Boolean) {
         _uiState.value = _uiState.value.copy(
             showIllustrationScreen = status
         )
@@ -273,30 +294,29 @@ class ScanQrViewModel(
     private fun sendScanYcuCompleteEvent(isSuccess: Boolean, errorMessage: String? = null) {
         viewModelScope.launch {
             val commonParams = commonAnalyticsParamsProvider.get()
-            /*   analyticsApi.postEvent(
-                   event = "scan_ycu_complete",
-                   values = commonParams + mapOf(
-                       "is_QR_scan" to uiState.value.isQrScan,
-                       "status" to if (isSuccess) "success" else "failed",
-                       "failure_reason" to errorMessage.orEmpty(),
-                       "ycu_number" to uiState.value.scannedQrCode.orEmpty(),
-                   )
-               )*/
+//            analyticsApi.postEvent(
+//                event = "scan_ycu_complete",
+//                values = commonParams + mapOf(
+//                    "is_QR_scan" to uiState.value.isQrScan,
+//                    "status" to if (isSuccess) "success" else "failed",
+//                    "failure_reason" to errorMessage.orEmpty(),
+//                    "ycu_number" to uiState.value.scannedQrCode.orEmpty(),
+//                )
+//            )
         }
     }
 
     fun sendScanYcuScreenViewed() {
         viewModelScope.launch {
             val commonParams = commonAnalyticsParamsProvider.get()
-            /*   analyticsApi.postEvent(
-                   event = "screen_viewed",
-                   values = commonParams + mapOf(
-                       "screen_name" to "scan_ycu_screen"
-                   )
-               )*/
+      /*      analyticsApi.postEvent(
+                event = "screen_viewed",
+                values = commonParams + mapOf(
+                    "screen_name" to "scan_ycu_screen"
+                )
+            )*/
         }
     }
-
     class Factory(
         private val startDiyFlowUseCase: StartDiyFlowUseCase,
         private val revertTokenCheckInStatusUseCase: RevertTokenCheckInStatusUseCase,

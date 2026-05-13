@@ -1,5 +1,6 @@
 package com.yumacustomer.new_ble_sdk.data
 
+
 data class CommonSessionConfig(
     val userId: String, // customer user idd
     val qrCode: String, // ycu qr code

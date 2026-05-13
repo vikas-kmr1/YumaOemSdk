@@ -5,7 +5,9 @@ sealed interface ScanQrEvent {
     object ToggleFlashlight : ScanQrEvent
     object OnBackClicked : ScanQrEvent
     object DismissBottomSheet: ScanQrEvent
+    object DismissDialog: ScanQrEvent
     object OnCustomerSupportClicked: ScanQrEvent
     data class OnScanCompleted(val result: String, val isQrScan: Boolean = false) : ScanQrEvent
     data class OnAutoDialerRequestReceived(val contactNumber: String) : ScanQrEvent
 }
+

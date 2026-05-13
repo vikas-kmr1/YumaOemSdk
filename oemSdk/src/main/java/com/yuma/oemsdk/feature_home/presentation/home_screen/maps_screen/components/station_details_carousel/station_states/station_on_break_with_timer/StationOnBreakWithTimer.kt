@@ -1,5 +1,7 @@
 package com.yumaoem.feature_home.presentation.home_screen.maps_screen.components.station_details_carousel.station_states.station_on_break_with_timer
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,10 +36,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
+import java.time.LocalDateTime
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun StationOnBreakWithTimerCard(
     stationName: String,
@@ -122,6 +124,7 @@ fun TimerChip(
  * Starts with the *current* difference and counts down every second.
  * Completes when the difference reaches 0 or becomes negative.
  */
+@RequiresApi(Build.VERSION_CODES.O)
 fun countdownToNextOpening(nextOpeningTime: Int?): Flow<Int> = flow {
     if (nextOpeningTime == null) {
         emit(0)
@@ -137,9 +140,9 @@ fun countdownToNextOpening(nextOpeningTime: Int?): Flow<Int> = flow {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun remainingSeconds(nextOpeningTime: Int): Int {
-    val now = Clock.System.now()
-    val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
+    val local = LocalDateTime.now()
 
     val nowSeconds = local.hour * 3_600 + local.minute * 60 + local.second
     return nextOpeningTime - nowSeconds

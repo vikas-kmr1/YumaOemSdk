@@ -1,5 +1,7 @@
 package com.yumaoem.feature_home.presentation.home_screen.maps_screen
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,9 +71,7 @@ import com.yumaoem.feature_home.presentation.home_screen.maps_screen.viewmodel.M
 import dev.icerock.moko.permissions.PermissionState
 import dev.icerock.moko.permissions.compose.BindEffect
 import dev.icerock.moko.permissions.compose.rememberPermissionsControllerFactory
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import java.time.LocalTime
 
 @Composable
 fun MapScreenRoot(
@@ -303,10 +303,10 @@ fun MapScreenContent(
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun isNextOpeningTimeLessThanOneMinute(nextOpeningTime: Int?): Boolean {
     if (nextOpeningTime == null) return false
-    val now = Clock.System.now()
-    val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
+    val local = LocalTime.now()
 
     val secondsSinceMidnightNow =
         local.hour * 3_600 + local.minute * 60 + local.second
@@ -327,7 +327,6 @@ fun MapViewRoot(
 }
 
 @Composable
-
 fun MapComponent(viewModel: MapViewModel) {
     val currentLocation by viewModel.currentLocation.collectAsState()
     val mapState by viewModel.mapState.collectAsState()
@@ -442,12 +441,14 @@ fun MapComponent(viewModel: MapViewModel) {
                 stationMarkers.forEach { station ->
                     MarkerComposable(
                         anchor = Offset(0.1f, 1f),
-                        state = MarkerState(
-                            LatLng(
-                                station.location.latitude,
-                                station.location.longitude,
+                        state = remember {
+                            MarkerState(
+                                LatLng(
+                                    station.location.latitude,
+                                    station.location.longitude,
+                                )
                             )
-                        ),
+                        },
                         onClick = {
                             val currentTime = System.currentTimeMillis()
                             if (currentTime - lastClickTime > 1000) {

@@ -34,6 +34,12 @@ internal class HomeViewModel(
 
     var swapInProgressScreenArgs: SwapInProgressScreenArgs? = null
 
+    val currentBatterySwap: Int
+        get() = navigationStateRepository.currentBatterySwap
+
+    val isMultiYcuSwap: Boolean
+        get() = navigationStateRepository.isMultiYcuFlow
+
     private fun updateHomeScreenDestination(destination: HomeScreenDestination) {
         viewModelScope.launch {
             if (destination == HomeScreenDestination.MapScreen ||
@@ -93,6 +99,7 @@ internal class HomeViewModel(
 
             is HomeScreenEvent.OnSwapComplete -> {
                 swapTime = event.swapTime
+                navigationStateRepository.resetMultiYcuState()
                 updateHomeScreenDestination(HomeScreenDestination.SwapSuccessScreen)
             }
 
@@ -120,6 +127,12 @@ internal class HomeViewModel(
             HomeScreenEvent.NavigateToTagBattery -> {
                 updateHomeScreenDestination(HomeScreenDestination.TagBatteryScannerScreen)
             }
+
+            is HomeScreenEvent.OnPartialSwapSuccess -> {
+                navigationStateRepository.currentBatterySwap += 1
+                navigationStateRepository.isMultiYcuFlow = true
+                updateHomeScreenDestination(HomeScreenDestination.ScanMachineQrScreen)
+            }
         }
     }
 
@@ -133,7 +146,6 @@ internal class HomeViewModel(
         const val SWAP_IN_PROGRESS_SCREEN = "SWAP_INPROGRESS_TOKEN"
         const val DIY_SWAP_INITIATED = "DIY_SWAP_INITIATED"
     }
-
 
     class Factory(
         private val yumaPrefUtil: YumaPrefUtilApi,

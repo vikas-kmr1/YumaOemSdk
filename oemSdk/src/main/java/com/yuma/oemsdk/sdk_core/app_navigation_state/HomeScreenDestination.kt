@@ -1,5 +1,6 @@
 package com.yumaoem.core.app_navigation_state
 
+
 enum class HomeScreenDestination {
     MapScreen,
     MapScreenPostSwap,

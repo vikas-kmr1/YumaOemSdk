@@ -63,6 +63,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.material)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.icons.extended)
+
+    // CameraX for camera preview & lifecycle
+    implementation(libs.bundles.camerax)
+    // ML Kit barcode scanning (bundled model — works offline)
+    implementation(libs.mlkit.barcode.scanning)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -93,7 +99,7 @@ dependencies {
     implementation(libs.touchlab.kermit)//logging
 
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.datetime.v061)
+
     implementation(libs.coroutines.core)
     implementation(libs.lottie.compose)
 

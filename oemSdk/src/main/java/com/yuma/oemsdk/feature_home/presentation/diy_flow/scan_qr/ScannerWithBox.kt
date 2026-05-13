@@ -4,12 +4,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 
-fun ContentDrawScope.drawQRScannerOverlay(bottomSpace: Dp = 120.dp) {
+fun DrawScope.drawQRScannerOverlay(bottomSpace: Dp = 120.dp) {
     val canvasWidth = size.width
     val canvasHeight = size.height
 

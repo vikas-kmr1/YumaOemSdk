@@ -35,7 +35,7 @@ object Endpoints {
 
     const val START_DIY_SWAP = "yuzen/oem/diy-swap-details"
 
-    const val YUZEN_DEV_BASE_URL = "https://dev-backend-api.yumax.app/"
+    const val YUZEN_DEV_BASE_URL = "https://preprod-backend-api.yumax.app/"
 
     const val VALIDATE_LOCATION = "token/validate-location"
 
@@ -52,6 +52,8 @@ object Endpoints {
     const val CREATE_ORDER = "plans/buy-plan"
 
     const val TAG_BATTERY = "yuzen/oem/map-new-batteries-on-bike"
+
+    const val VERIFY_BATTERIES = "batteries/verify"
 }
 
 object DummyEndpoints {

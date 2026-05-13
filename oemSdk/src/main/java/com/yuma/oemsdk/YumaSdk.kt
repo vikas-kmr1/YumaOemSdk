@@ -44,6 +44,7 @@ import com.yumaoem.feature_home.domain.usecase.ble.StartSwapUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SubmitChargedBatteryQrUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SubmitSwapResultUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SwapStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.TriggerAccessTypeUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.CancelTokenBookingUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.CheckInUserUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.ObserveTokenExpiryCountdownUseCase
@@ -64,6 +65,7 @@ import com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprt
 import com.yumaoem.feature_home.domain.usecase.tag_battery.MapNewBatteriesOnBikeUseCase
 import com.yumaoem.feature_home.domain.usecase.token_booking.book_token.BookTokenUseCase
 import com.yumaoem.feature_home.domain.usecase.token_status.GetTokenStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.verify_batteries.VerifyBatteriesUseCase
 import com.yumaoem.feature_home.presentation.diy_flow.CommonSessionConfigFactory
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressViewModel
 import com.yumaoem.feature_home.presentation.diy_flow.scan_qr.ScanQrViewModel
@@ -210,7 +212,10 @@ object YumaSdk {
             val autoDialerRequestUseCase = AutoDialerRequestUseCase(homeRepository)
             val commonAnalyticsParamsProvider = CommonAnalyticsParamsProvider(prefManager)
             val whatsappSupprtDetailsUseCase = GetWhatsappSupprtDetailsUseCase(homeRepository)
-
+            val  customerSupportCallInteractor = CustomerSupportCallInteractor(
+                prefManager,
+                autoDialerRequestUseCase
+            )
             // 4. Initialize ViewModel Factories
             silentAuthViewModelFactory = buildSilentAuthViewModelFactory(
                 navigationStateRepository,
@@ -251,7 +256,10 @@ object YumaSdk {
                 getBatteryDetailsUseCase,
                 autoDialerRequestUseCase,
                 commonAnalyticsParamsProvider,
-                loggerApi
+                navigationStateRepository,
+                loggerApi,
+                customerSupportCallInteractor,
+
             )
 
             paymentHomeViewModelFactory =
@@ -276,10 +284,12 @@ object YumaSdk {
                 getBeaconDetailsUseCase = GetBeaconDetailsUseCase(homeRepository),
                 observeTokenExpiryCountdownUseCase = ObserveTokenExpiryCountdownUseCase,
                 checkInUserUseCase = CheckInUserUseCase(homeRepository),
-                cancelTokenBookingUseCase = cancelTokenBookingUseCase ,
+                cancelTokenBookingUseCase = cancelTokenBookingUseCase,
                 prefUtilApi = prefManager,
                 locationProvider = coreLocationProvider,
                 validateLocationUseCase = ValidateLocationUseCase(homeRepository),
+                verifyBatteriesUseCase = VerifyBatteriesUseCase(homeRepository),
+                customerSupportCallInteractor = customerSupportCallInteractor,
             )
 
             tagBatteryViewModelFactory = TagBatteryViewModel.Factory(
@@ -287,7 +297,7 @@ object YumaSdk {
                 prefsApi = prefManager,
                 commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
                 coreLocationProvider = coreLocationProvider,
-                customerSupportCallInteractor = CustomerSupportCallInteractor(prefManager,autoDialerRequestUseCase)
+                customerSupportCallInteractor = customerSupportCallInteractor
             )
 
             tokenQrScreenViewModelFactory = TokenQrScreenViewModel.Factory(
@@ -439,10 +449,13 @@ object YumaSdk {
         getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
         autoDialerRequestUseCase: AutoDialerRequestUseCase,
         analyticsParamsProvider: CommonAnalyticsParamsProvider,
-        loggerApi: LoggerApi
+        navigationStateRepository: NavigationStateRepository,
+        loggerApi: LoggerApi,
+        customerSupportCallInteractor: CustomerSupportCallInteractor,
     ): DiySwapInProgressViewModel.Factory {
         val yumaBleSDK = YumaBleSDK(context, environment.name)
         val yumaBleRepository = YumaBleRepositoryImpl(yumaBleSDK)
+        val triggerAccessTypeUseCase = TriggerAccessTypeUseCase(yumaBleRepository)
         return DiySwapInProgressViewModel.Factory(
             initializeBleSessionUseCase = InitializeBleSessionUseCase(yumaBleRepository),
             startSwapUseCase = StartSwapUseCase(yumaBleRepository),
@@ -459,15 +472,14 @@ object YumaSdk {
             commonAnalyticsParamsProvider = analyticsParamsProvider,
             loggerApi = loggerApi,
             prefsApi = prefManager,
-            customerSupportCallInteractor = CustomerSupportCallInteractor(
-                prefManager,
-                autoDialerRequestUseCase
-            ),
+            customerSupportCallInteractor = customerSupportCallInteractor,
             commonSessionConfigFactory = CommonSessionConfigFactory(
                 prefManager,
                 coreLocationProvider
             ),
-            json = jsonConfig
+            json = jsonConfig,
+            triggerAccessTypeUseCase = triggerAccessTypeUseCase,
+            navigationStateRepository = navigationStateRepository
         )
     }
 

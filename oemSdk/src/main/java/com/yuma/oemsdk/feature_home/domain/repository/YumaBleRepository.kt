@@ -13,6 +13,7 @@ interface YumaBleRepository {
     suspend fun submitSwapResult()
     suspend fun submitBatteryQr(batteryQr: List<String>)
     suspend fun cleanupSession()
+    suspend fun triggerAccessType()
     fun observeResponses(): Flow<YumaResponse>
     fun isSessionActive(): Boolean
     suspend fun smartSwapSubmit() : SmartSwapSubmitResponse

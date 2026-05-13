@@ -25,7 +25,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.yuma.oemsdk.R
 
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun SomethingWentWrongModalBottomSheet(
@@ -149,7 +148,7 @@ fun DBInsertFailedModalBottomSheet(
     onRetry: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    if (showSheet) {
+    if(showSheet){
         ModalBottomSheet(
             dragHandle = null,
             onDismissRequest = onDismiss,
@@ -210,12 +209,11 @@ fun DBInsertFailedCustomerSupportModalBottomSheet(
             ),
             containerColor = Color.Transparent,
         ) {
-            Column(
-                modifier = Modifier
-                    .background(
-                        color = Color.White,
-                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-                    )
+            Column(modifier = Modifier
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                )
             ) {
                 SecondaryErrorBottomSheetContent(
                     title = "Something went wrong",
@@ -239,7 +237,7 @@ fun CBOpenFailedModalBottomSheet(
     onCustomerSupportClicked: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    if (showSheet) {
+    if(showSheet){
         ModalBottomSheet(
             dragHandle = null,
             onDismissRequest = onDismiss,
@@ -259,13 +257,14 @@ fun CBOpenFailedModalBottomSheet(
 }
 
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwapStatusNotCompletedModalBottomSheet(
     showSheet: Boolean = true,
     onRetry: () -> Unit,
     onDismiss: () -> Unit
-) {
+){
     if (showSheet) {
         ModalBottomSheet(
             dragHandle = null,
@@ -292,7 +291,7 @@ fun RemoteSwapInProgressModalBottomSheet(
     showSheet: Boolean = true,
     onRetry: () -> Unit,
     onDismiss: () -> Unit
-) {
+){
     if (showSheet) {
         ModalBottomSheet(
             dragHandle = null,
@@ -306,6 +305,33 @@ fun RemoteSwapInProgressModalBottomSheet(
                 description = "Please wait for your swap to complete",
                 onRetry = {
                     onRetry()
+                }
+            )
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DBDoNotInsertBatteryModalSheet(
+    showSheet: Boolean = true,
+    onCustomerSupportClicked: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if(showSheet){
+        ModalBottomSheet(
+            dragHandle = null,
+            onDismissRequest = onDismiss,
+            sheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true
+            )
+        ) {
+            ContactYumaSupportBottomSheetContent(
+                title = "Do NOT insert battery",
+                description = "Close the door without battery",
+                onCustomerSupportClicked = {
+                    onCustomerSupportClicked()
                 }
             )
         }

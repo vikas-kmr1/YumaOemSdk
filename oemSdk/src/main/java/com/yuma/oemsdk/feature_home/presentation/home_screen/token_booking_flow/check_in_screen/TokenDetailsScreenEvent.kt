@@ -8,4 +8,7 @@ sealed class TokenDetailsScreenEvent {
     data object CheckInAtStationClicked : TokenDetailsScreenEvent()
     data object GetDirectionsClicked: TokenDetailsScreenEvent()
     data object NoBeaconFoundRetry: TokenDetailsScreenEvent()
+    data object OnBackClicked: TokenDetailsScreenEvent()
+    data object OnBatteryVerification : TokenDetailsScreenEvent()
+    data object ResetScanState: TokenDetailsScreenEvent()
 }
