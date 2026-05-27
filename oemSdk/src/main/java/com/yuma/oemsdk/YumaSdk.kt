@@ -19,7 +19,6 @@ import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.data.AndroidBluetoothController
 import com.yumaoem.core.utils.device_info.DeviceInfoProvider
 import com.yumaoem.core.utils.network_connection.NetworkStatusProvider
-import com.yumaoem.core.utils.network_connection.NetworkStatusProviderImpl
 import com.yumaoem.core.utils.sound_player.SoundPlayer
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.corepreference.createDataStore
@@ -99,23 +98,36 @@ enum class Environment {
  */
 
 class YumaSdkConfiguration(
-    val clientKey: String,
+    val clientId: Int,
+    val clientSecret: String,
+    val authCode: String,
     val mapApiKey: String,
     val environment: Environment
 ) {
     class Builder {
-        private var clientKey: String = emptyString
+        private var clientId: Int = 0
+        private lateinit var clientSecret: String
+        private lateinit var authCode: String
         private var mapApiKey: String = emptyString
         private var environment: Environment = Environment.PROD
 
-        fun setClientKey(clientKey: String) = apply { this.clientKey = clientKey }
+        fun setClientSecret(clientSecret: String) = apply { this.clientSecret = clientSecret }
+        fun setClientId(clientId: Int) = apply { this.clientId = clientId }
+        fun setAuthCode(authCode: String) = apply { this.authCode = authCode }
         fun setMapApiKey(mapApiKey: String) = apply { this.mapApiKey = mapApiKey }
         fun setEnvironment(environment: Environment) = apply { this.environment = environment }
 
         fun build(): YumaSdkConfiguration {
-            require(clientKey.isNotBlank()) { "Client Key must not be blank" }
+            require(clientSecret.isNotBlank()) { "Client Key must not be blank" }
+            require(authCode.isNotBlank()) { "auth-code must not be blank" }
             require(mapApiKey.isNotBlank()) { "Map API Key must not be blank" }
-            return YumaSdkConfiguration(clientKey, mapApiKey, environment)
+            return YumaSdkConfiguration(
+                clientId = clientId,
+                clientSecret = clientSecret,
+                authCode = authCode,
+                mapApiKey = mapApiKey,
+                environment = environment
+            )
         }
     }
 }
@@ -146,6 +158,7 @@ object YumaSdk {
     internal lateinit var tokenQrScreenViewModelFactory: TokenQrScreenViewModel.Factory
     internal lateinit var tagBatteryViewModelFactory: TagBatteryViewModel.Factory
     internal lateinit var scanQrViewModelFactory: ScanQrViewModel.Factory
+
     // Core Services
     internal lateinit var prefManager: YumaPrefUtilApi
     internal lateinit var coreLocationProvider: CoreLocationProvider
@@ -186,7 +199,8 @@ object YumaSdk {
             networkStatusProvider = NetworkStatusProvider()
             val cashfreeGateway: PaymentGateway = AndroidPaymentGateway(applicationContext)
             val loggerApi = LoggerApiImpl(enableLogging)
-            val networkClient = initYumaNetworkClient(enableLogging, loggerApi, prefManager, sdkConfig.environment)
+            val networkClient =
+                initYumaNetworkClient(enableLogging, loggerApi, prefManager, sdkConfig.environment)
             val locationProvider = LocationProvider(applicationContext)
             val deviceInfoProvider = DeviceInfoProvider(applicationContext)
             val serviceLauncher = ServiceLauncher(applicationContext)
@@ -199,7 +213,7 @@ object YumaSdk {
             )
 
             // 2. Data Sources & Repositories Setup
-             onboardingDatasource = OnboardingRemoteDataSource(networkClient, coreLocationProvider)
+            onboardingDatasource = OnboardingRemoteDataSource(networkClient, coreLocationProvider)
             val yuzenDataSource =
                 YuzenRemoteDataSource(networkClient, jsonConfig, coreLocationProvider)
             val homeDataSource =
@@ -212,7 +226,7 @@ object YumaSdk {
             val autoDialerRequestUseCase = AutoDialerRequestUseCase(homeRepository)
             val commonAnalyticsParamsProvider = CommonAnalyticsParamsProvider(prefManager)
             val whatsappSupprtDetailsUseCase = GetWhatsappSupprtDetailsUseCase(homeRepository)
-            val  customerSupportCallInteractor = CustomerSupportCallInteractor(
+            val customerSupportCallInteractor = CustomerSupportCallInteractor(
                 prefManager,
                 autoDialerRequestUseCase
             )
@@ -260,7 +274,7 @@ object YumaSdk {
                 loggerApi,
                 customerSupportCallInteractor,
 
-            )
+                )
 
             paymentHomeViewModelFactory =
                 buildPaymentHomeViewModel(homeDataSource, prefManager, loggerApi)

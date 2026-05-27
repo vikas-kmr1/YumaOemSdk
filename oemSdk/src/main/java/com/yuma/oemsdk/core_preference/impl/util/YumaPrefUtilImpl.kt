@@ -43,6 +43,14 @@ class YumaPrefUtilImpl(
             ?.also { cachedBearerTokens = it }
     }
 
+    override suspend fun saveOrderId(orderId: Int) {
+        preferenceApi.putInt(ORDER_ID, orderId)
+    }
+
+    override suspend fun getOrderId(): Int? {
+        return preferenceApi.getInt(ORDER_ID).firstOrNull()
+    }
+
     override fun clearBearerTokens() {
         runBlocking {
             cachedBearerTokens = null

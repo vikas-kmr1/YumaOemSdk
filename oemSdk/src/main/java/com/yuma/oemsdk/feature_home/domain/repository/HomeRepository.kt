@@ -71,7 +71,7 @@ interface HomeRepository {
     ):Flow<RestClientResult<TokenStatus>>
 
     suspend fun getDropOffScreen(
-        clientUserId:Int
+        clientVehicleId: Int
     ):Flow<RestClientResult<DropOffScreenData>>
 
     suspend fun getBatteryDetails(

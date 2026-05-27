@@ -168,12 +168,12 @@ class HomeRemoteDataSource (
     }
 
     suspend fun getDropOffScreen(
-        clientUserId:Int
+        clientVehicleId:Int
     ) = getResult<DropOffScreenResponseDTO> {
         val client = httpClientApi.getAuthenticatedHttpClient()
         client.get {
             url(Endpoints.DROP_OFF_SCREEN)
-            parameter("clientUserId", clientUserId)
+            parameter("clientVehicleId", clientVehicleId)
         }
     }
 

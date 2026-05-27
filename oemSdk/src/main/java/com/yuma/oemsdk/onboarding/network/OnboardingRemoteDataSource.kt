@@ -25,7 +25,7 @@ class OnboardingRemoteDataSource(
         val client = httpClientApi.getOnboardingHttpClient()
         val currentLocation = locationProvider.getCurrentLocation()
         client.post {
-            url(Endpoints.VERIFY_OTP)
+            url(Endpoints.VERIFY_AUTH_CODE)
             setBody(silentAuthRequest)
             parameter("latitude", currentLocation?.latitude)
             parameter("longitude", currentLocation?.longitude)
@@ -33,12 +33,12 @@ class OnboardingRemoteDataSource(
     }
 
     suspend fun getDropOffScreen(
-        clientUserId: Int
+        clientVehicleId: Int
     ) = getResult<DropOffScreenResponseDTO> {
         val client = httpClientApi.getOnboardingHttpClient()
         client.get {
-            url(com.yumaoem.feature_home.data.network.util.Endpoints.DROP_OFF_SCREEN)
-            parameter("clientUserId", clientUserId)
+            url(Endpoints.DROP_OFF_SCREEN)
+            parameter("clientVehicleId", clientVehicleId)
         }
     }
 

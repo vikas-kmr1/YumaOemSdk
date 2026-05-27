@@ -146,7 +146,7 @@ class TagBatteryViewModel(
                     clientVehicleId = userDetails.clientVehicleId,
                     currentBatteryQrcodes = updatedList,
                     userId = userDetails.userId.toInt(),
-                    clientUserId = userDetails.clientUserId,
+                    clientCityId = userDetails.clientCityId,
                     batteryCount = userDetails.batteryCount,
                     currentLatitude = currentLocation.latitude,
                     currentLongitude = currentLocation.longitude

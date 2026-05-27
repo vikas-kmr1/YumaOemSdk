@@ -5,10 +5,6 @@ import kotlinx.serialization.SerialName
 
 @Serializable
 data class BookTokenRequest(
-	val userId: Int,
-
-	@SerialName("clientUserId")
-	val clientUserId: Int,
 
 	@SerialName("clientVehicleId")
 	val clientVehicleId: Int,
@@ -29,16 +25,13 @@ data class BookTokenRequest(
 	val distanceFromChargingStation: Int? = null,
 
 	@SerialName("tokenStatusId")
-	val tokenStatusId: Int,
+	val orderId: Int,
 
 	@SerialName("isDiyToken")
 	val isDiyToken: Boolean,
 
 	@SerialName("clientCityId")
 	val clientCityId: Int,
-
-	@SerialName("clientId")
-	val clientId: Int,
 
 	@SerialName("vehicleItemGroupId")
 	val vehicleItemGroupId: Int

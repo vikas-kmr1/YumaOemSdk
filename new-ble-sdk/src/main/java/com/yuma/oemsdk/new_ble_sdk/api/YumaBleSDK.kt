@@ -30,7 +30,7 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
 
     private fun mapEnvironment(env: String): YumaSDKConfig.Environment {
         return when (env.uppercase()) {
-            "DEV" -> YumaSDKConfig.Environment.DEV1
+            "DEV" -> YumaSDKConfig.Environment.DEV3
             "PREPROD", "PRE_PROD" -> YumaSDKConfig.Environment.PREPROD
             "PROD", "PRODUCTION" -> YumaSDKConfig.Environment.PROD
             else -> {

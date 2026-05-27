@@ -117,9 +117,9 @@ class HomeRepositoryImpl(
     }
 
     override suspend fun getDropOffScreen(
-        clientUserId: Int
+        clientVehicleId: Int
     ): Flow<RestClientResult<DropOffScreenData>> = getFlowResult {
-        homeRemoteDataSource.getDropOffScreen(clientUserId).mapFromDTO { dto->
+        homeRemoteDataSource.getDropOffScreen(clientVehicleId).mapFromDTO { dto->
             dto.toDomain()
         }
     }

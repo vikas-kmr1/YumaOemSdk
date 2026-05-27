@@ -88,12 +88,13 @@ internal class SilentAuthViewModel(
     }
 
     private fun silentAuth() {
+
         viewModelScope.launch {
+            if (!ensureLocationIsEnabled()) return@launch
             val deviceInfo = deviceInfoProvider.getDeviceInfo()
             silentAuthUseCase.invoke(
                 silentAuthRequest = SilentAuthRequest(
-                    clientId = 0,
-                    clientKey = YumaSdk.getConfig().clientKey,
+                    authcode = YumaSdk.getConfig().authCode,
                     model = deviceInfo.model,
                     manufacturer = deviceInfo.manufacturer,
                     osName = deviceInfo.osName,
@@ -201,6 +202,7 @@ internal class SilentAuthViewModel(
                 batteryCount = user.batteryCount
             )
         )
+        preferenceApi.saveOrderId(response.orderId)
         saveBearerTokens(response)
         delay(200)
         state = state.copy(
@@ -264,9 +266,9 @@ internal class SilentAuthViewModel(
         viewModelScope.launch {
             locationProvider.startLocationUpdates()
 
-            val clientUserId = preferenceApi.getUserData()?.clientUserId
-            clientUserId?.let {
-                dropOffDataUseCase.invoke(it).collect(
+            val clientVehicleId = preferenceApi.getUserData()?.clientVehicleId
+            clientVehicleId?.let {clientVehicleId->
+                dropOffDataUseCase.invoke(clientVehicleId).collect(
                     onLoading = {
                         state = state.copy(
                             isErrorState = false

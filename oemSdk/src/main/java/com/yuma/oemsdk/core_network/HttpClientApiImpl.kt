@@ -2,6 +2,7 @@ package com.yuma.oemsdk.core_network
 
 import android.util.Log
 import com.yuma.oemsdk.Environment
+import com.yuma.oemsdk.YumaSdk
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.model.auth.AuthBearerTokens
 import com.yumaoem.core_network.api.HttpClientApi
@@ -66,7 +67,7 @@ class HttpClientApiImpl(
      * The base URL for network requests, determined by the provided [environment].
      */
     val BASE_URL = when (environment) {
-        Environment.DEV -> "dev-backend-oem.yumax.app"
+        Environment.DEV -> "dev3-backend-oem.yumax.app"
         Environment.PREPROD -> "preprod-backend-oem.yumax.app"
         Environment.PROD -> "backend-oem.yumax.app"
     }
@@ -88,11 +89,15 @@ class HttpClientApiImpl(
             defaultRequest {
                 host = BASE_URL
                 url { protocol = URLProtocol.HTTPS }
+                headers.append("x-client-id", "${YumaSdk.getConfig().clientId}")
+                headers.append("x-client-secret", YumaSdk.getConfig().clientSecret)
+                headers.append("Content-Type", "application/json")
                 contentType(ContentType.Application.Json)
             }
 
             // Token Handling (no static token here, auth plugin manages it)
             install(Auth) {
+
                 bearer {
                     loadTokens {
                         preferenceUtilApi.getBearerTokens()?.let {

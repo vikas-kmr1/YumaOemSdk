@@ -3,6 +3,7 @@ package com.yumaoem.feature_onboarding.domain.model.verify_otp.response
 data class SilentAuthResponse(
     val accessToken: Token,
     val refreshToken: Token,
+    val orderId: Int,
     val user: User
 )
 
