@@ -162,10 +162,14 @@ class MapViewModel(
         serviceLauncher.startDummyNotification()
         viewModelScope.launch {
             val userDetails: User? = mapState.value.userDetails
+            val orderId = prefUtilApi.getOrderId()
+
+            if (orderId == null) return@launch
+
             userDetails.let { it ->
                 if (it == null) {
                     serviceLauncher.stopForeGroundNotification()
-                    _uiEvent.emit(MapScreenUiEvent.ShowSnackbar("User details not found"))
+                    _uiEvent.emit(ShowSnackbar("User details not found"))
                     return@launch
                 } else {
                     val distance =
@@ -175,16 +179,13 @@ class MapViewModel(
                             chargingStationId = mapState.value.selectedStation?.stationId.orZero(),
                             latitude = currentLocation.value?.latitude.orZero(),
                             longitude = currentLocation.value?.longitude.orZero(),
-                            clientId = it.clientId,
-                            clientUserId = it.clientUserId,
                             clientCityId = it.clientCityId,
                             clientVehicleId = it.clientVehicleId,
                             clientVehicleQrCode = it.clientVehicleQrCode,
                             vehicleItemGroupId = it.clientVehicleGroupId,
-                            userId = it.userId.toInt(),
-                            tokenStatusId = 1,
                             isDiyToken = false,
-                            distanceFromChargingStation = distance?.toInt()
+                            distanceFromChargingStation = distance?.toInt(),
+                            orderId = orderId,
                         )
                     ).collect(
                         onLoading = {
@@ -326,12 +327,12 @@ class MapViewModel(
                 if (data.isEmpty().not()) {
                     getNearestStations(data, location, skipOptimization)
                 } else {
-                    _uiEvent.emit(MapScreenUiEvent.ShowSnackbar("No nearby stations found"))
+                    _uiEvent.emit(ShowSnackbar("No nearby stations found"))
                 }
 
             },
             onError = { errorMessage, _ ->
-                _uiEvent.emit(MapScreenUiEvent.ShowSnackbar(errorMessage))
+                _uiEvent.emit(ShowSnackbar(errorMessage))
             }
         )
     }
@@ -544,7 +545,7 @@ class MapViewModel(
                     sendGoogleMapApiEvent()
                 },
                 onError = { _, _ ->
-                    _uiEvent.emit(MapScreenUiEvent.ShowSnackbar("Failed to load route"))
+                    _uiEvent.emit(ShowSnackbar("Failed to load route"))
                 }
             )
         }
@@ -612,7 +613,7 @@ class MapViewModel(
                 onMarkerSelected(closerStationWithRoute)
             } catch (e: Exception) {
                 e.printStackTrace()
-                _uiEvent.emit(MapScreenUiEvent.ShowSnackbar("Failed to load route for one or more stations"))
+                _uiEvent.emit(ShowSnackbar("Failed to load route for one or more stations"))
             }
         }
     }
@@ -644,7 +645,7 @@ class MapViewModel(
                 sendStationViewEvent(marker1)
             },
             onError = { _, _ ->
-                _uiEvent.emit(MapScreenUiEvent.ShowSnackbar("Failed to get station status"))
+                _uiEvent.emit(ShowSnackbar("Failed to get station status"))
             }
         )
     }

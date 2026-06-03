@@ -6,11 +6,8 @@ import kotlinx.serialization.SerialName
 @Serializable
 data class SilentAuthRequest(
 
-	@SerialName("clientKey")
-	val clientKey: String,
-
-	@SerialName("clientId")
-	val clientId: Int,
+	@SerialName("auth_code")
+	val authcode: String,
 
 	@SerialName("model")
 	val model: String,

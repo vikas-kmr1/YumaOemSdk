@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,7 +24,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.yuma.oemsdk.R
-
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -36,7 +36,7 @@ fun SomethingWentWrongModalBottomSheet(
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { false }
+        confirmValueChange = { it != SheetValue.Hidden }
     )
 
     ModalBottomSheet(
@@ -71,7 +71,7 @@ fun BluetoothConnectionFailedModalBottomSheet(
             onDismissRequest = onDismiss,
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                confirmValueChange = { false }
+                confirmValueChange = { it != SheetValue.Hidden }
             )
 
         ) {
@@ -101,7 +101,7 @@ fun IncorrectModalBottomSheet(
             onDismissRequest = {},
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                confirmValueChange = { false }
+                confirmValueChange = { it != SheetValue.Hidden }
             )
         ) {
             ErrorBottomSheetContent(
@@ -127,7 +127,7 @@ fun ScanBatteryTryAgainModalBottomSheet(
             onDismissRequest = {},
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
-                confirmValueChange = { false }
+                confirmValueChange = { it != SheetValue.Hidden }
             )
         ) {
             ErrorBottomSheetContent(
@@ -148,7 +148,7 @@ fun DBInsertFailedModalBottomSheet(
     onRetry: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    if (showSheet) {
+    if(showSheet){
         ModalBottomSheet(
             dragHandle = null,
             onDismissRequest = onDismiss,
@@ -209,12 +209,11 @@ fun DBInsertFailedCustomerSupportModalBottomSheet(
             ),
             containerColor = Color.Transparent,
         ) {
-            Column(
-                modifier = Modifier
-                    .background(
-                        color = Color.White,
-                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-                    )
+            Column(modifier = Modifier
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                )
             ) {
                 SecondaryErrorBottomSheetContent(
                     title = "Something went wrong",
@@ -238,7 +237,7 @@ fun CBOpenFailedModalBottomSheet(
     onCustomerSupportClicked: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    if (showSheet) {
+    if(showSheet){
         ModalBottomSheet(
             dragHandle = null,
             onDismissRequest = onDismiss,
@@ -258,13 +257,14 @@ fun CBOpenFailedModalBottomSheet(
 }
 
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwapStatusNotCompletedModalBottomSheet(
     showSheet: Boolean = true,
     onRetry: () -> Unit,
     onDismiss: () -> Unit
-) {
+){
     if (showSheet) {
         ModalBottomSheet(
             dragHandle = null,
@@ -291,7 +291,7 @@ fun RemoteSwapInProgressModalBottomSheet(
     showSheet: Boolean = true,
     onRetry: () -> Unit,
     onDismiss: () -> Unit
-) {
+){
     if (showSheet) {
         ModalBottomSheet(
             dragHandle = null,
@@ -305,6 +305,33 @@ fun RemoteSwapInProgressModalBottomSheet(
                 description = "Please wait for your swap to complete",
                 onRetry = {
                     onRetry()
+                }
+            )
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DBDoNotInsertBatteryModalSheet(
+    showSheet: Boolean = true,
+    onCustomerSupportClicked: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if(showSheet){
+        ModalBottomSheet(
+            dragHandle = null,
+            onDismissRequest = onDismiss,
+            sheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true
+            )
+        ) {
+            ContactYumaSupportBottomSheetContent(
+                title = "Do NOT insert battery",
+                description = "Close the door without battery",
+                onCustomerSupportClicked = {
+                    onCustomerSupportClicked()
                 }
             )
         }

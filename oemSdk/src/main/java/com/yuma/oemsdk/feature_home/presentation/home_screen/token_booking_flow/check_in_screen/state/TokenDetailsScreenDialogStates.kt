@@ -6,4 +6,7 @@ sealed class DialogState {
     data object ReachStation : DialogState()
     data object CancelBookingConfirmation : DialogState()
     data object TokenExpired : DialogState()
+    data object WrongBattery: DialogState()
+    data object ScanBattery: DialogState()
+    data class CustomerSupport(val mobileNumber: String, val isLoading: Boolean) : DialogState()
 }

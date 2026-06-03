@@ -1,5 +1,4 @@
-/*
-package com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress
+package com.yuma.oemsdk.feature_home.presentation.diy_flow.diy_swap_in_progress
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -35,15 +34,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-=
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.noRippleDebounceClickable
-=
 import com.yumaoem.core_ui.components.buttons.YumaPrimaryButton
 import com.yumaoem.core_ui.components.snackbar.SuccessSnackbar
-
+import com.yumaoem.core_ui.components.step_indicator.StepIndicator
 import com.yumaoem.core_ui.theme.YumaAppTheme
 import com.yumaoem.core_ui.theme.color.Colors
 import com.yumaoem.core_ui.theme.color.LocalColors
@@ -51,11 +53,21 @@ import com.yumaoem.core_ui.theme.dimension.LocalDimensions
 import com.yumaoem.core_ui.theme.typography.LocalTypography
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
+import com.yumaoem.feature_home.presentation.diy_flow.dialogs.MultiYcuInfoDialog
+import com.yumaoem.feature_home.presentation.diy_flow.dialogs.SwapInfoDialog
 import com.yumaoem.feature_home.presentation.diy_flow.diy_scan_battery_screen.DiyScanBatteryScreen
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapDialog
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressEvent
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressState
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressUiEvent
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressViewModel
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.args.SwapInProgressScreenArgs
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.components.GetCallbackContentModalBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.diy_multi_ycu_swap_in_progress.DiyMultiYcuSwapInProgressScreen
 import com.yumaoem.feature_home.presentation.diy_flow.error_bottom_sheets.BluetoothConnectionFailedModalBottomSheet
 import com.yumaoem.feature_home.presentation.diy_flow.error_bottom_sheets.CBOpenFailedModalBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.error_bottom_sheets.DBDoNotInsertBatteryModalSheet
 import com.yumaoem.feature_home.presentation.diy_flow.error_bottom_sheets.DBInsertFailedCustomerSupportModalBottomSheet
 import com.yumaoem.feature_home.presentation.diy_flow.error_bottom_sheets.DBInsertFailedModalBottomSheet
 import com.yumaoem.feature_home.presentation.diy_flow.error_bottom_sheets.RemoteSwapInProgressModalBottomSheet
@@ -74,18 +86,27 @@ fun DiySwapInProgressScreenRoot(
     args: SwapInProgressScreenArgs,
     onRetry: () -> Unit,
     onSuccessfulSwap: (String) -> Unit,
+    onPartialSwapSuccess: () -> Unit,
+    currentBatterySwap: Int = 1,
+    isMultiYcuSwap: Boolean = false,
     isHomeTab: Boolean
-){
-    val viewModel = koinViewModel<DiySwapInProgressViewModel>()
+) {
+    val viewModel: DiySwapInProgressViewModel =
+        viewModel(factory = YumaSdk.diySwapInProgressViewModelFactory)
     val state by viewModel.state.collectAsState()
-    val isMultiBatteryFlow: State<Boolean> = derivedStateOf {
-        state.batteryCount>1
+    val isMultiBatteryFlow: State<Boolean> = remember {
+        derivedStateOf {
+            !isMultiYcuSwap && state.batteryCount > 1
+        }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
+        if (isMultiYcuSwap) {
+            viewModel.setMultiYcuArgs(currentBatterySwap, isMultiYcuSwap)
+        }
         viewModel.setSwapInProgressArgs(args)
     }
 
@@ -97,6 +118,7 @@ fun DiySwapInProgressScreenRoot(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is DiySwapInProgressUiEvent.SwapCompleted -> {
+                    viewModel.sendSwapCompleteEvent()
                     onSuccessfulSwap(event.swapTime)
                 }
 
@@ -140,6 +162,22 @@ fun DiySwapInProgressScreenRoot(
         viewModel = viewModel
     )
 
+    DiySwapDialogHost(
+        dialog = state.dialog,
+        onContinue = {
+            viewModel.onEvent(DiySwapInProgressEvent.OnContinueClicked)
+        },
+        onScanQr = {
+            viewModel.sendMultiYcuCtaBtnClickedEvent(
+                actionName = "pop_up_scan_qr_cta",
+                isSubmitButton = false,
+                status = false,
+                failureReason = ""
+            )
+            onPartialSwapSuccess()
+        }
+    )
+
     if (isHomeTab) {
         Scaffold(
             snackbarHost = {
@@ -147,25 +185,43 @@ fun DiySwapInProgressScreenRoot(
                     SuccessSnackbar(data = data)
                 }
             }
-        ) {
+        ) {innerPadding ->
             if (state.showScanBatteryScreen.not()) {
-                LaunchedEffect(Unit) {
-                    viewModel.sendDiySwapInProgressScreenViewedEvent()
-                }
-                DiySwapInProgressScreen(
-                    state = state,
-                    toggleBottomSheet = {
-                        viewModel.onEvent(DiySwapInProgressEvent.ToggleBikeDetailsBottomSheet)
-                        viewModel.sendBottomSheetClickedEvent()
-                    },
-                    onSubmitButtonClicked = {
-                        viewModel.onSubmitClicked()
-                    },
-                    onCustomerSupportClicked = {
-                        viewModel.showCustomerSupportBottomSheet()
-                        viewModel.sendCsButtonClickedEvent()
+                if (state.isMultiYcuSwap.not()) {
+                    LaunchedEffect(Unit) {
+                        viewModel.sendDiySwapInProgressScreenViewedEvent()
                     }
-                )
+                    DiySwapInProgressScreen(
+                        state = state,
+                        toggleBottomSheet = {
+                            viewModel.onEvent(DiySwapInProgressEvent.ToggleBikeDetailsBottomSheet)
+                            viewModel.sendBottomSheetClickedEvent()
+                        },
+                        isMultiYcuSwap = state.isMultiYcuSwap,
+                        onSubmitButtonClicked = {
+                            viewModel.onSubmitClicked()
+                        },
+                        onCustomerSupportClicked = {
+                            viewModel.showCustomerSupportBottomSheet()
+                            viewModel.sendCsButtonClickedEvent()
+                        }
+                    )
+                } else {
+                    DiyMultiYcuSwapInProgressScreen(
+                        state = state,
+                        isSubmitButtonVisible = state.isSubmitButtonVisible,
+                        isSubmitting = state.isSubmitting,
+                        onSubmitButtonClicked = {
+                            viewModel.onSubmitClicked()
+                        },
+                        onCustomerSupportClicked = {
+                            viewModel.showCustomerSupportBottomSheet()
+                        },
+                        toggleBottomSheet = {
+                            viewModel.onEvent(event = DiySwapInProgressEvent.ToggleBikeDetailsBottomSheet)
+                        }
+                    )
+                }
             } else {
                 LaunchedEffect(Unit) {
                     viewModel.sendManualBatteryScreenViewedEvent()
@@ -178,7 +234,12 @@ fun DiySwapInProgressScreenRoot(
                         viewModel.onEvent(DiySwapInProgressEvent.ToggleFlashlight)
                     },
                     onScanCompleted = { result, isManualEntry ->
-                        viewModel.onEvent(DiySwapInProgressEvent.OnBatteryScanned(result,isManualEntry))
+                        viewModel.onEvent(
+                            DiySwapInProgressEvent.OnBatteryScanned(
+                                result,
+                                isManualEntry
+                            )
+                        )
                     },
                     onCustomerSupportClicked = {
                         viewModel.showCustomerSupportBottomSheet()
@@ -188,7 +249,8 @@ fun DiySwapInProgressScreenRoot(
                     scannedBatteryCount = state.batteryQrList.size,
                     totalBatteryCount = state.batteryCount,
                     isFlashLightOn = state.isFlashlightOn,
-                    showCustomerSupport = true
+                    showCustomerSupport = true,
+                    isMultiYcuSwap = state.isMultiYcuSwap
                 )
             }
         }
@@ -201,6 +263,7 @@ fun DiySwapInProgressScreenRoot(
 private fun DiySwapInProgressScreen(
     state: DiySwapInProgressState,
     toggleBottomSheet: () -> Unit,
+    isMultiYcuSwap: Boolean,
     onSubmitButtonClicked: () -> Unit,
     onCustomerSupportClicked: () -> Unit,
 ) {
@@ -232,13 +295,7 @@ private fun DiySwapInProgressScreen(
 
                 )
             Spacer(modifier = Modifier.height(18.dp))
-            Text(
-                text = "Swap has started",
-                style = LocalTypography.current.bodyLargeSemiBold.copy(
-                    color = LocalColors.current.neutral[Colors.TYPE_900.ordinal]
-                )
-            )
-            Spacer(modifier = Modifier.height(28.dp))
+
             Text(
                 textAlign = TextAlign.Center,
                 text = "Follow steps on the YCU screen\n to complete swap",
@@ -254,7 +311,8 @@ private fun DiySwapInProgressScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter),
-            toggleBottomSheet = toggleBottomSheet
+            toggleBottomSheet = toggleBottomSheet,
+            isMultiYcuSwap = isMultiYcuSwap
         )
 
         Column(
@@ -288,37 +346,62 @@ fun DiySwapInProgressScreenStationHeader(
     stationName: String,
     stationId: String,
     modifier: Modifier = Modifier,
-    toggleBottomSheet: () -> Unit
+    toggleBottomSheet: () -> Unit,
+    hideStepIndicator: Boolean = false,
+    isMultiYcuSwap: Boolean = false
 ) {
-    Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-        .fillMaxWidth()
-        .background(
-            color = Color(0xFFF5F7FA)
-        )
-        .padding(start = 24.dp, end = 24.dp,bottom = 20.dp, top = 50.dp)
+    Column(
+        modifier = Modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = "Station Name",
-                style = LocalTypography.current.smallBodyMedium.copy(
-                    textAlign = TextAlign.Start
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+                .fillMaxWidth()
+                .background(
+                    color = Color(0xFFF5F7FA)
                 )
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "$stationName - $stationId",
-                style = LocalTypography.current.smallBodySemiBold
+                .padding(start = 24.dp, end = 24.dp, bottom = 18.dp, top = 50.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = "Station Name",
+                    style = LocalTypography.current.smallBodyMedium.copy(
+                        textAlign = TextAlign.Start
+                    )
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$stationName - $stationId",
+                    style = LocalTypography.current.smallBodySemiBold
+                )
+            }
+            BatteryQrIcon(
+                toggleBottomSheet = toggleBottomSheet
             )
         }
-        BatteryQrIcon(
-            toggleBottomSheet = toggleBottomSheet
-        )
+        if(!hideStepIndicator) {
+            Spacer(modifier = Modifier.height(30.dp))
+            StepIndicator(
+                totalSteps = 3,
+                currentStep = 3,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp)
+            )
+        }
+        if(!isMultiYcuSwap) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                textAlign = TextAlign.Center,
+                text = "Swap in progress",
+                style = LocalTypography.current.bodyLargeSemiBold.copy(
+                    color = LocalColors.current.neutral[Colors.TYPE_900.ordinal]
+                ),
+            )
+        }
     }
 }
 
@@ -363,7 +446,7 @@ fun DiySwapNeedHelpFooter(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             Image(
-                painter = painterResource(Res.drawable.ic_phone_outlined),
+                painter = painterResource(R.drawable.ic_phone_outlined),
                 contentDescription = "phone icon"
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -374,26 +457,6 @@ fun DiySwapNeedHelpFooter(
                 )
             )
         }
-    }
-}
-
-@Preview
-@Composable
-fun DiySwapInProgressScreenStationHeaderPreview() {
-    YumaAppTheme {
-        DiySwapInProgressScreenStationHeader(
-            stationName = "Yuma Charging",
-            stationId = "101",
-            toggleBottomSheet = {}
-        )
-    }
-}
-
-@Preview
-@Composable
-fun DiySwapNeedHelpFooterPreview() {
-    YumaAppTheme {
-        DiySwapNeedHelpFooter {}
     }
 }
 
@@ -497,6 +560,76 @@ fun DiySwapBottomSheetHost(
                     onDismiss = onDismiss
                 )
             }
+
+            DiySwapBottomSheet.DBDoNotInsertBatteryModalSheet -> {
+                DBDoNotInsertBatteryModalSheet(
+                    onCustomerSupportClicked = {
+                        onCustomerSupportClicked()
+                    },
+                    onDismiss = onDismiss
+                )
+            }
         }
     }
-}*/
+}
+
+@Composable
+fun DiySwapDialogHost(
+    dialog: DiySwapDialog,
+    onContinue: () -> Unit,
+    onScanQr: () -> Unit
+) {
+    if (dialog != DiySwapDialog.None) {
+        when (dialog) {
+            DiySwapDialog.MultiYcuSwapDialog -> {
+                MultiYcuInfoDialog(
+                    title = "2 Machine Swap",
+                    onAction = onContinue
+                )
+            }
+
+            DiySwapDialog.SwapInfoDialog -> {
+                SwapInfoDialog(
+                    title = "Battery 2",
+                    onAction = onScanQr
+                )
+            }
+
+            DiySwapDialog.None -> {}
+        }
+    }
+}
+
+@Preview
+@Composable
+fun DiySwapInProgressScreenStationHeaderPreview() {
+    YumaAppTheme {
+        DiySwapInProgressScreenStationHeader(
+            stationName = "Yuma Charging",
+            stationId = "101",
+            toggleBottomSheet = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+fun DiySwapNeedHelpFooterPreview() {
+    YumaAppTheme {
+        DiySwapNeedHelpFooter {}
+    }
+}
+
+@Preview
+@Composable
+fun DiySwapInProgressScreenPreview() {
+    YumaAppTheme {
+        DiySwapInProgressScreen(
+            state = DiySwapInProgressState(),
+            toggleBottomSheet = {},
+            isMultiYcuSwap = false,
+            onSubmitButtonClicked = {},
+            onCustomerSupportClicked = {}
+        )
+    }
+}

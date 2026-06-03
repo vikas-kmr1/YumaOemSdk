@@ -17,7 +17,9 @@ data class BookedTokenDetailsDTO(
     val batteryType:Int,
     val batteryCount:Int,
     val isNewDiyUser:Boolean = false,
-    val bookingStation: YumaStationMarkerDTO? = null
+    val bookingStation: YumaStationMarkerDTO? = null,
+    val isBatteryVerificationRequired: Boolean = false,
+    val isBatteryVerified: Boolean = false
 )
 
 @Serializable

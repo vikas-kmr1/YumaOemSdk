@@ -1,10 +1,9 @@
 package com.yumaoem.core.utils
 
-
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import android.os.Build
+import androidx.annotation.RequiresApi
 import java.text.NumberFormat
+import java.time.LocalDateTime
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.log10
@@ -59,10 +58,10 @@ fun Boolean?.orFalse(): Boolean {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun Long.formatToIST(): String {
-    val instant = Instant.fromEpochMilliseconds(this)
-    val istZone = TimeZone.of("Asia/Kolkata")
-    val localDateTime = instant.toLocalDateTime(istZone)
+
+    val localDateTime = LocalDateTime.now()
 
     val hour = localDateTime.hour % 12
     val displayHour = if (hour == 0) 12 else hour

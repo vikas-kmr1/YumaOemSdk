@@ -24,7 +24,9 @@ fun BookedTokenDetails.toDTO() = BookedTokenDetailsDTO(
     batteryType = batteryType,
     batteryCount = batteryCount,
     isNewDiyUser = isNewDiyUser,
-    bookingStation = bookingStation?.toDTO()
+    bookingStation = bookingStation?.toDTO(),
+    isBatteryVerificationRequired = isBatteryVerificationRequired,
+    isBatteryVerified = isBatteryVerified
 )
 
 fun BookedTokenDetailsDTO.toDomain() = BookedTokenDetails(
@@ -41,7 +43,9 @@ fun BookedTokenDetailsDTO.toDomain() = BookedTokenDetails(
     batteryType = batteryType,
     batteryCount = batteryCount,
     isNewDiyUser = isNewDiyUser,
-    bookingStation = bookingStation?.toDomain()
+    bookingStation = bookingStation?.toDomain(),
+    isBatteryVerificationRequired = isBatteryVerificationRequired,
+    isBatteryVerified = isBatteryVerified
 )
 
 

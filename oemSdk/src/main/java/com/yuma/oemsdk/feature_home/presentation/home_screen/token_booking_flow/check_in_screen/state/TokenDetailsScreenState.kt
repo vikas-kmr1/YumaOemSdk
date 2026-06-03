@@ -13,5 +13,20 @@ data class TokenDetailsScreenState(
     val beaconDetails: List<Beacon>? = null,
     val isCheckInButtonLoading:Boolean = false,
     val isCancelBookingButtonLoading:Boolean = false,
-    val currentBatteryDetails: List<BatteryDetails>? = null
-)
+    val currentBatteryDetails: List<BatteryDetails>? = null,
+
+    // states used for battery verification before proceeding to diy swap
+    val batteryVerificationCompleted: Boolean = false,
+    val showBatteryVerificationScreen: Boolean = false,
+    val isFlashLightOn: Boolean = false,
+    val batteryQrList: List<String> = emptyList(),
+    val totalBatteryCount: Int = 0,
+    val isSubmitting: Boolean = false,
+    val isBatteryVerificationRequired: Boolean = false
+) {
+    val isMultiBatteryFlow: Boolean
+        get() = totalBatteryCount > 1
+
+    val isLoading: Boolean
+        get() = isSubmitting
+}

@@ -1,6 +1,7 @@
 package com.yumaoem.corepreference.impl.util
 
 internal const val USER_ID = "user_id"
+const val ORDER_ID = "order_id"
 const val ACCESS_TOKEN = "ACCESS_TOKEN"
 const val USER_DATA = "USER_DATA"
 const val BEARER_TOKENS = "BearerTokens"

@@ -23,7 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.noRippleDebounceClickable
 
 import com.yumaoem.core_ui.components.buttons.YumaPrimaryButton
@@ -45,64 +47,64 @@ fun PaymentDetailsScreenRoot(
     navigateToPaymentSuccessScreen: () -> Unit,
     navigateToHomeTab: () -> Unit
 ) {
-//    val viewModel = koinViewModel<PaymentDetailsViewmodel>()
-//    val state = viewModel.state.collectAsState()
-//
-//    LaunchedEffect(Unit) {
-//        viewModel.setCurrentPlan(plan)
-//    }
-//
-//    if (state.value.planDetails!=null && isPaymentsTab){
-//        PaymentDetailsScreen(
-//            state = state.value.planDetails!!,
-//            onBackClicked = onBackClicked,
-//            onPayClicked = {
-//                viewModel.createOrder()
-//            },
-//            isCreatingOrder = state.value.isCreatingOrder
-//        )
-//    }
-//    LaunchedEffect(Unit) {
-//        viewModel.uiEvent.collect { event ->
-//            when (event) {
-//                is PaymentDetailsUiEvent.PaymentFailed -> {
-//                    SnackbarController.sendEvent(
-//                        SnackbarEvent(
-//                            message = event.message,
-//                            duration = SnackbarDuration.Short
-//                        )
-//                    )
-//                }
-//                is PaymentDetailsUiEvent.PaymentSuccess -> {
-//                    navigateToPaymentSuccessScreen()
-//                }
-//
-//                is PaymentDetailsUiEvent.Error -> {
-//                    SnackbarController.sendEvent(
-//                        event = SnackbarEvent(
-//                            message = event.message
-//                        )
-//                    )
-//                }
-//
-//                is PaymentDetailsUiEvent.NavigateToPaymentHomeScreen -> {
-//                    navigateToHomeTab()
-//                }
-//            }
-//        }
-//    }
-//
-//    when (state.value.paymentDetailsBottomSheetState) {
-//        PaymentDetailsBottomSheet.CouldNotFetchPaymentStatus -> {
-//            CouldNotFetchPaymentStatus(
-//                showSheet = true,
-//                onBackClick = {
-//                    navigateToHomeTab()
-//                }
-//            )
-//        }
-//        PaymentDetailsBottomSheet.Hidden -> {}
-//    }
+    val viewModel: PaymentDetailsViewmodel = viewModel(factory = YumaSdk.paymentDetailsViewModelFactory)
+    val state = viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.setCurrentPlan(plan)
+    }
+
+    if (state.value.planDetails!=null && isPaymentsTab){
+        PaymentDetailsScreen(
+            state = state.value.planDetails!!,
+            onBackClicked = onBackClicked,
+            onPayClicked = {
+                viewModel.createOrder()
+            },
+            isCreatingOrder = state.value.isCreatingOrder
+        )
+    }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is PaymentDetailsUiEvent.PaymentFailed -> {
+                    SnackbarController.sendEvent(
+                        SnackbarEvent(
+                            message = event.message,
+                            duration = SnackbarDuration.Short
+                        )
+                    )
+                }
+                is PaymentDetailsUiEvent.PaymentSuccess -> {
+                    navigateToPaymentSuccessScreen()
+                }
+
+                is PaymentDetailsUiEvent.Error -> {
+                    SnackbarController.sendEvent(
+                        event = SnackbarEvent(
+                            message = event.message
+                        )
+                    )
+                }
+
+                is PaymentDetailsUiEvent.NavigateToPaymentHomeScreen -> {
+                    navigateToHomeTab()
+                }
+            }
+        }
+    }
+
+    when (state.value.paymentDetailsBottomSheetState) {
+        PaymentDetailsBottomSheet.CouldNotFetchPaymentStatus -> {
+            CouldNotFetchPaymentStatus(
+                showSheet = true,
+                onBackClick = {
+                    navigateToHomeTab()
+                }
+            )
+        }
+        PaymentDetailsBottomSheet.Hidden -> {}
+    }
 }
 
 @Composable

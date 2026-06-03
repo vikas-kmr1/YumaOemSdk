@@ -1,33 +1,33 @@
-/*
 package com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.yuma.oemsdk.data.network.SdkHomeRemoteDataSource
-import com.yuma.oemsdk.location.SdkLocationManager
-import com.yuma.oemsdk.prefs.SdkPrefManager
-import com.yuma.oemsdk.viewmodel.SdkHomeViewModel
+import com.yuma.oemsdk.onboarding.SilentAuthViewModel
 import com.yumacustomer.core_analytics.api.AnalyticsApi
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumacustomer.new_ble_sdk.data.CommonSessionConfig
+import com.yumacustomer.new_ble_sdk.data.DiySwapStatus
 import com.yumacustomer.new_ble_sdk.data.SmartSwapSubmitResponse
+import com.yumacustomer.new_ble_sdk.data.SubmitType
 import com.yumacustomer.new_ble_sdk.data.YumaResponse
-import com.yumaoem.core.model.auth.User
+import com.yumacustomer.new_ble_sdk.data.YumaResponse.InitSuccess
+import com.yumacustomer.new_ble_sdk.data.YumaResponse.SubmitSuccess
+import com.yumacustomer.new_ble_sdk.data.YumaResponse.SyncDifferenceRes
+import com.yumaoem.core.app_navigation_state.NavigationStateRepository
 import com.yumaoem.core.utils.currentTimeMillis
+import com.yumaoem.core.utils.device_info.DeviceInfoProvider
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core.utils.qr_validator.BatteryQrValidator
 import com.yumaoem.core.utils.qr_validator.QR_Patterns.BATTERY_CODE_SEPARATOR
+import com.yumaoem.core.utils.sound.playBeep
 import com.yumaoem.core.utils.vibration.vibrate
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
-import com.yumaoem.corepreference.model.BookedTokenDetailsDTO
 import com.yumaoem.feature_home.common.customer_support.CustomerSupportCallInteractor
 import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
-import com.yumaoem.feature_home.data.dto.auto_dialer.AutoDialerDetail
-import com.yumaoem.feature_home.data.dto.auto_dialer.AutoDialerRequest
 import com.yumaoem.feature_home.data.dto.cu_response.CUResponseDTO
 import com.yumaoem.feature_home.data.dto.cu_response.deserializeCUResponse
 import com.yumaoem.feature_home.domain.usecase.auto_dialer.AutoDialerRequestUseCase
@@ -39,13 +39,20 @@ import com.yumaoem.feature_home.domain.usecase.ble.StartSwapUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SubmitChargedBatteryQrUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SubmitSwapResultUseCase
 import com.yumaoem.feature_home.domain.usecase.ble.SwapStatusUseCase
+import com.yumaoem.feature_home.domain.usecase.ble.TriggerAccessTypeUseCase
 import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.profile_screen.GetUserDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.token_status.GetTokenStatusUseCase
 import com.yumaoem.feature_home.presentation.diy_flow.CommonSessionConfigFactory
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.BikeDetails
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapBottomSheet
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressEvent
+import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.DiySwapInProgressState
 import com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress.args.SwapInProgressScreenArgs
+import com.yumaoem.feature_onboarding.data.network.OnboardingRemoteDataSource
+import com.yumaoem.feature_onboarding.domain.use_case.drop_off.GetDropOffDataUseCase
+import com.yumaoem.feature_onboarding.domain.use_case.verify_otp.SilentAuthUseCase
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -56,6 +63,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlin.collections.plus
 
 class DiySwapInProgressViewModel(
     private val initializeBleSessionUseCase: InitializeBleSessionUseCase,
@@ -67,6 +75,7 @@ class DiySwapInProgressViewModel(
     private val commonSessionConfigFactory: CommonSessionConfigFactory,
     private val getTokenStatusUseCase: GetTokenStatusUseCase,
     private val autoDialerRequestUseCase: AutoDialerRequestUseCase,
+    private val triggerAccessTypeUseCase: TriggerAccessTypeUseCase,
     private val submitChargedBatteryQrUseCase: SubmitChargedBatteryQrUseCase,
     private val getUserDetailsUseCase: GetUserDetailsUseCase,
     private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
@@ -74,10 +83,12 @@ class DiySwapInProgressViewModel(
     private val customerSupportCallInteractor: CustomerSupportCallInteractor,
     private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
     private val prefsApi: YumaPrefUtilApi,
-    private val analyticsApi: AnalyticsApi,
+   // private val analyticsApi: AnalyticsApi,
     private val loggerApi: LoggerApi,
-    private val json: Json
+    private val json: Json,
+    private val navigationStateRepository: NavigationStateRepository
 ) : ViewModel() {
+
 
     companion object {
         const val TAG = "DiySwapInProgressViewModel"
@@ -98,6 +109,15 @@ class DiySwapInProgressViewModel(
             observeResponses().collect { response ->
                 handleBleResponse(response)
             }
+        }
+    }
+
+    fun setMultiYcuArgs(currentBatteryIndex: Int, isMultiYcuSwap: Boolean) {
+        _state.update {
+            it.copy(
+                currentBatteryIndex = currentBatteryIndex,
+                isMultiYcuSwap = isMultiYcuSwap
+            )
         }
     }
 
@@ -126,8 +146,7 @@ class DiySwapInProgressViewModel(
         }
     }
 
-    */
-/**
+    /**
      * Handles the BLE response flow:
      * 1. Initialization: Receives [YumaResponse.InitSuccess].
      * 2. Swap Process:
@@ -141,8 +160,7 @@ class DiySwapInProgressViewModel(
      *    - On [YumaResponse.SubmitSuccess], calls [CleanupBleSessionUseCase].
      *
      * Note: Refer to DiyViewModel in Yuma app for SDK response handling details.
-     *//*
-
+     */
 
     private fun handleBleResponse(response: YumaResponse) {
         loggerApi.logDWithTag(TAG, "handleBleResponse: ${response}")
@@ -150,7 +168,7 @@ class DiySwapInProgressViewModel(
             is YumaResponse.NetworkSuccess -> handleNetworkSuccess()
             is YumaResponse.Connected -> handleConnected()
             is YumaResponse.SyncDifferenceRes -> handleSyncDifference(response)
-            is YumaResponse.SubmitSuccess -> handleSubmitSuccess()
+            is YumaResponse.SubmitSuccess -> handleSubmitSuccess(response)
             is YumaResponse.Error -> handleError(response)
             is YumaResponse.PermissionGranted -> handlePermissionGranted()
             is YumaResponse.InitSuccess -> handleInitSuccess()
@@ -160,6 +178,7 @@ class DiySwapInProgressViewModel(
                 _state.update { it.copy(status = "Response state received") }
             }
             is YumaResponse.ConfigSet -> handleConfigSet()
+            is YumaResponse.MultiYcuSwap -> handleMultiYcuSwap(response.isMultiYcuSwap, response.partialCompletedCount)
             else -> {
                 _state.update { it.copy(status = "Status: $response") }
             }
@@ -191,26 +210,32 @@ class DiySwapInProgressViewModel(
     }
 
     private fun handleSyncDifference(response: YumaResponse.SyncDifferenceRes) {
-        */
-/** this logic is shelved**//*
-
+        /** this logic is shelved**/
     }
 
-    private fun handleSubmitSuccess() {
+    private fun handleSubmitSuccess(response: YumaResponse.SubmitSuccess) {
         submitJob?.cancel()
         submitJob = null
 
-        viewModelScope.launch {
-            delay(100)
-            cleanupSession()
-            getSwapTime()
+        when (response.id) {
+            SubmitType.SWAP_SUBMIT -> handleSwapSubmit(response)
+
+            SubmitType.MANUAL_SWAP_SUBMIT -> {
+                sendManualBatteryScannedEvent(true, null, _state.value.isManualEntry)
+                sendManualBatteryScreenViewedEvent(isFinalEvent = true)
+                handleSwapSubmit(response, isManual = true)
+            }
+        }
+        if(_state.value.isMultiYcuSwap){
+            sendMultiYcuCtaBtnClickedEvent(
+                actionName = "Battery ${_state.value.currentBatteryIndex} Continue Btn",
+                isSubmitButton = true,
+                status = true,
+                failureReason = ""
+            )
         }
         sendSubmitClickedEvent(true, null)
         sendDiySwapInProgressScreenViewedEvent(true)
-        if(_state.value.showScanBatteryScreen){
-            sendManualBatteryScannedEvent(true, null, _state.value.isManualEntry)
-            sendManualBatteryScreenViewedEvent(isFinalEvent = true)
-        }
         _state.update {
             it.copy(
                 isSubmitting = false,
@@ -220,6 +245,36 @@ class DiySwapInProgressViewModel(
                 bottomSheet = DiySwapBottomSheet.None,
             )
         }
+    }
+
+    private fun handleSwapSubmit(
+        response: YumaResponse.SubmitSuccess,
+        isManual: Boolean = false
+    ) {
+        cleanupSession()
+        when {
+            response.isMultiYCUSwap == true && response.partialCompletedCount == 1 -> {
+                _state.update {
+                    it.copy(
+                        showScanBatteryScreen = if (isManual) false else it.showScanBatteryScreen,
+                        dialog = DiySwapDialog.SwapInfoDialog
+                    )
+                }
+            }
+
+            shouldCompleteSwap(response) -> {
+                viewModelScope.launch {
+                    delay(100)
+                    cleanupSession()
+                    getSwapTime()
+                }
+            }
+        }
+    }
+
+    private fun shouldCompleteSwap(response: YumaResponse.SubmitSuccess): Boolean {
+        return (response.isMultiYCUSwap == true && response.partialCompletedCount == state.value.batteryCount) ||
+                (response.isMultiYCUSwap == false)
     }
 
     private fun handleError(response: YumaResponse.Error) {
@@ -238,13 +293,21 @@ class DiySwapInProgressViewModel(
     }
 
     private fun handleSubmitFailedError(message: String, id: Int) {
-        sendSubmitClickedEvent(false, message)
         submitJob?.cancel()
         submitJob = null
         if(_state.value.showScanBatteryScreen){
             sendManualBatteryScannedEvent(false, message, _state.value.isManualEntry)
         }
         if(id == 0) {
+            if(_state.value.isMultiYcuSwap){
+                sendMultiYcuCtaBtnClickedEvent(
+                    actionName = "Battery ${_state.value.currentBatteryIndex} Continue Btn",
+                    isSubmitButton = true,
+                    status = false,
+                    failureReason = message
+                )
+            }
+            sendSubmitClickedEvent(false, message)
             showSubmitFailedBottomSheet()
             _state.update {
                 it.copy(
@@ -254,19 +317,17 @@ class DiySwapInProgressViewModel(
             }
             return
         }
-        */
-/** taking all other values as default except id and message **//*
-
+        /** taking all other values as default except id and message **/
         val smartSwapResponse = SmartSwapSubmitResponse(
-                id = id,
-                message = message,
-                isManualFlowEnabled = false,
-                timeTaken = "",
-                isTokenCompleted = false,
-                isSessionTimedOut = false,
-                isCallInitiated = false,
-                isPingAvailable = false,
-                isYcuScanAllowedAgain = false
+            id = id,
+            message = message,
+            isManualFlowEnabled = false,
+            timeTaken = "",
+            isTokenCompleted = false,
+            isSessionTimedOut = false,
+            isCallInitiated = false,
+            isPingAvailable = false,
+            isYcuScanAllowedAgain = false
         )
         handleSmartSwapSubmitSuccess(smartSwapResponse)
     }
@@ -282,12 +343,13 @@ class DiySwapInProgressViewModel(
     }
 
     private fun handleDisconnectedError(message: String) {
+        loggerApi.logDWithTag("DiySwapInProgressViewModel", "handleDisconnectedError: $message")
         _state.update {
             it.copy(
                 isConnected = false,
                 status = "Disconnected from YCU device",
                 error = message,
-                bottomSheet = if (it.isConnecting) {
+                bottomSheet =  if (it.isConnecting) {
                     DiySwapBottomSheet.BluetoothConnectionFailed
                 } else {
                     DiySwapBottomSheet.None
@@ -405,10 +467,21 @@ class DiySwapInProgressViewModel(
     }
 
     private fun handleSmartSwapSubmitSuccess(response: SmartSwapSubmitResponse) {
-        sendSubmitClickedEvent(true, null)
+        if(_state.value.isMultiYcuSwap){
+            sendMultiYcuCtaBtnClickedEvent(
+                actionName = "Battery ${_state.value.currentBatteryIndex} Continue Btn",
+                isSubmitButton = true,
+                status = false,
+                failureReason = response.message
+            )
+        }
+        sendSubmitClickedEvent(false, response.message)
         loggerApi.logDWithTag(TAG, "handleSmartSwapSubmitSuccess: $response")
         when(response.id) {
-            1,2,4 -> {
+
+            DiySwapStatus.PING_NOT_RECEIVED.id,
+            DiySwapStatus.IOT_ATTEMPTS_FAILED.id,
+            DiySwapStatus.SESSION_TIME_OUT.id -> {
                 _state.update {
                     it.copy(
                         isSubmitting = false,
@@ -416,7 +489,9 @@ class DiySwapInProgressViewModel(
                     )
                 }
             }
-            3,10 -> {
+
+            DiySwapStatus.TOKEN_ALREADY_FULFILLED.id,
+            DiySwapStatus.SWAP_COMPLETED_SUCCESSFULLY.id -> {
                 viewModelScope.launch {
                     _uiEvent.send(DiySwapInProgressUiEvent.SwapCompleted(response.timeTaken))
                 }
@@ -430,7 +505,8 @@ class DiySwapInProgressViewModel(
                     )
                 }
             }
-            5 -> {
+
+            DiySwapStatus.DB_INSERT_BEFORE_TIMEOUT.id -> {
                 _state.update {
                     it.copy(
                         isSubmitting = false,
@@ -438,7 +514,8 @@ class DiySwapInProgressViewModel(
                     )
                 }
             }
-            6 -> {
+
+            DiySwapStatus.DB_INSERT_AFTER_TIMEOUT.id -> {
                 _state.update {
                     it.copy(
                         isSubmitting = false,
@@ -446,7 +523,8 @@ class DiySwapInProgressViewModel(
                     )
                 }
             }
-            7 -> {
+
+            DiySwapStatus.CB_DOOR_OPEN_FAILED.id -> {
                 if(response.isCallInitiated){
                     _state.update {
                         it.copy(
@@ -463,11 +541,22 @@ class DiySwapInProgressViewModel(
                     }
                 }
             }
-            8,9 -> {
+
+            DiySwapStatus.CB_NOT_REMOVED.id,
+            DiySwapStatus.SWAP_NOT_COMPLETED.id -> {
                 _state.update {
                     it.copy(
                         isSubmitting = false,
                         bottomSheet = DiySwapBottomSheet.SwapStatusNotCompleted
+                    )
+                }
+            }
+
+            DiySwapStatus.DOOR_CLOSED_WITH_BATTERY_2.id -> {
+                _state.update {
+                    it.copy(
+                        isSubmitting = false,
+                        bottomSheet = DiySwapBottomSheet.DBDoNotInsertBatteryModalSheet
                     )
                 }
             }
@@ -479,6 +568,28 @@ class DiySwapInProgressViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun handleMultiYcuSwap(isMultiYcuSwap: Boolean, partialCompletedCount: Int){
+        if(!isMultiYcuSwap && partialCompletedCount == 0){
+            navigationStateRepository.resetMultiYcuState()
+
+            _state.update {
+                it.copy(
+                    isMultiYcuSwap = isMultiYcuSwap,
+                    currentBatteryIndex = partialCompletedCount+1
+                )
+            }
+            return
+        }
+        if(isMultiYcuSwap && partialCompletedCount == 1){
+            return
+        }
+        _state.update {
+            it.copy(
+                dialog = DiySwapDialog.MultiYcuSwapDialog
+            )
         }
     }
 
@@ -536,7 +647,7 @@ class DiySwapInProgressViewModel(
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(
-                    isConnecting = false,
+                    isConnecting = true,
                     error = null,
                     status = "Initializing...",
                     bottomSheet = DiySwapBottomSheet.None
@@ -558,9 +669,7 @@ class DiySwapInProgressViewModel(
 
 
     fun checkSwapStatus(tokenId : Long) {
-        */
-/** logic shelved **//*
-
+        /** logic shelved **/
     }
 
     fun sdkStartSwap() {
@@ -594,9 +703,7 @@ class DiySwapInProgressViewModel(
             smartSwapSubmit()
             return
         }
-        */
-/** At this point -swap is Not initiated and device is connected. **//*
-
+        /** At this point -swap is Not initiated and device is connected. **/
         submitSwapResult()
 
         _state.value = _state.value.copy(isSubmitting = true)
@@ -610,6 +717,14 @@ class DiySwapInProgressViewModel(
 
 
     fun smartSwapSubmit() {
+        if(_state.value.isMultiYcuSwap) {
+            _state.update{
+                it.copy(
+                    showScanBatteryScreen = true
+                )
+            }
+            return
+        }
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(
@@ -618,7 +733,7 @@ class DiySwapInProgressViewModel(
                     status = "Submitting...",
                     bottomSheet = DiySwapBottomSheet.None
                 )
-               val smartSwapSubmitResponse =  smartSwapSubmitUseCase()
+                val smartSwapSubmitResponse =  smartSwapSubmitUseCase()
                 handleSmartSwapSubmitSuccess(smartSwapSubmitResponse)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -670,6 +785,12 @@ class DiySwapInProgressViewModel(
             error = null,
             bottomSheet = DiySwapBottomSheet.None
         )
+    }
+
+    fun dismissDialog() {
+        _state.update {
+            it.copy(dialog = DiySwapDialog.None)
+        }
     }
 
     fun dismissBottomSheet() {
@@ -724,7 +845,9 @@ class DiySwapInProgressViewModel(
                 checkInTime = checkInTime,
                 tokenId = bookedToken.tokenID.toLong(),
                 batteryCount = batteryCount,
-                batteryType = bookedToken.batteryType
+                batteryType = bookedToken.batteryType,
+                isMultiSwapYcu = state.value.isMultiYcuSwap,
+                partialCompletedCount = state.value.currentBatteryIndex - 1
             )
 
             initializeSession(sessionConfig)
@@ -873,6 +996,28 @@ class DiySwapInProgressViewModel(
                     )
                 }
             }
+
+            DiySwapInProgressEvent.OnContinueClicked -> {
+                sendMultiYcuCtaBtnClickedEvent(
+                    actionName = "pop_up_continue_clicked",
+                    isSubmitButton = false,
+                    status = false,
+                    failureReason = ""
+                )
+                /** should enabled Multi Ycu swap in UI with battery index 1**/
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(
+                            isMultiYcuSwap = true,
+                            currentBatteryIndex = 1
+                        )
+                    }
+                    navigationStateRepository.isMultiYcuFlow = true
+                    navigationStateRepository.currentBatterySwap = 1
+                    dismissDialog()
+                    triggerAccessTypeUseCase()
+                }
+            }
         }
     }
 
@@ -915,10 +1060,12 @@ class DiySwapInProgressViewModel(
             if (newQr in state.batteryQrList) return@update state
 
             vibrate(durationMillis = 150)
+            playBeep()
 
             val updatedList = state.batteryQrList + newQr
 
-            if (updatedList.size == state.batteryCount) {
+            /** if multiYcuSwap is enabled for two battery swap then we can allow one battery manual scan as well **/
+            if ((updatedList.size == state.batteryCount) || state.isMultiYcuSwap) {
                 submitChargedBatteryQr(updatedList)
             }
 
@@ -999,7 +1146,7 @@ class DiySwapInProgressViewModel(
             } ?: return@launch
 
             loggerApi.logDWithTag(TAG,
-                    "loadBookedTokenDetails: stationID${tokenDetails.bookingStation?.stationId} StationName ${tokenDetails.bookingStation?.stationName}")
+                "loadBookedTokenDetails: stationID${tokenDetails.bookingStation?.stationId} StationName ${tokenDetails.bookingStation?.stationName}")
 
             _state.update { current ->
                 current.copy(
@@ -1013,7 +1160,7 @@ class DiySwapInProgressViewModel(
     private fun sendFailedToLoadStationDetailsEvents() {
         viewModelScope.launch {
             val currentUser = prefsApi.getUserData()
-            analyticsApi.postEvent(
+/*            analyticsApi.postEvent(
                 event = "FAILED_TO_GET_STATION_DETAILS",
                 values = mapOf(
                     "user_id" to currentUser?.userId.orEmpty(),
@@ -1021,7 +1168,7 @@ class DiySwapInProgressViewModel(
                     "mobile_number" to currentUser?.phone.orEmpty(),
                     "client_id" to currentUser?.clientId.orZero(),
                 )
-            )
+            )*/
         }
     }
 
@@ -1039,22 +1186,22 @@ class DiySwapInProgressViewModel(
                 eventValues["time_on_page"] =
                     (currentTimeMillis() - launchedTimeStamp).toString()
             }
-            analyticsApi.postEvent(
+  /*          analyticsApi.postEvent(
                 event = "screen_viewed",
                 values = commonValues + eventValues
-            )
+            )*/
         }
     }
 
     fun sendBottomSheetClickedEvent() {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+       /*     analyticsApi.postEvent(
                 event = "screen_viewed",
                 values = commonValues + mapOf(
                     "screen_name" to "diy_bike_details_sheet"
                 )
-            )
+            )*/
         }
     }
 
@@ -1072,56 +1219,56 @@ class DiySwapInProgressViewModel(
                 eventValues["time_on_page"] =
                     (currentTimeMillis() - manualBatteryLaunchedTimeStamp).toString()
             }
-            analyticsApi.postEvent(
+/*            analyticsApi.postEvent(
                 event = "screen_viewed",
                 values = commonValues + eventValues
-            )
+            )*/
         }
     }
 
     fun sendCsButtonClickedEvent() {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+  /*          analyticsApi.postEvent(
                 event = "cs_clicked",
                 values = commonValues + mapOf(
                     "screen_name" to "diy_swap_started_screen",
                     "ycu_number" to _state.value.ycuQrCode
                 )
-            )
+            )*/
         }
     }
 
     fun sendCsReceiveCallEvent(contactNumber: String) {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+/*            analyticsApi.postEvent(
                 event = "cs_receive_call_clicked",
                 values = commonValues + mapOf(
                     "screen_name" to "diy_swap_started_screen",
                     "call_back_number_entered" to contactNumber
                 )
-            )
+            )*/
         }
     }
 
     fun sendSubmitClickedEvent(isSuccess: Boolean, message: String?) {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+/*            analyticsApi.postEvent(
                 event = "diy_swap_submit_clicked",
                 values = commonValues + mapOf(
                     "status" to (if (isSuccess) "success" else "failed"),
                     "failure_reason" to (message ?: ""),
                 )
-            )
+            )*/
         }
     }
 
     fun sendManualBatteryScannedEvent(isSuccess: Boolean, message: String?, isManualEntry: Boolean) {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-            analyticsApi.postEvent(
+ /*           analyticsApi.postEvent(
                 event = "manual_battery_scanned",
                 values = commonValues + mapOf(
                     "battery_qr_code" to _state.value.batteryQrList.joinToString(","),
@@ -1130,7 +1277,53 @@ class DiySwapInProgressViewModel(
                     "ycu_number" to _state.value.ycuQrCode,
                     "is_QR_scan" to !isManualEntry,
                 )
-            )
+            )*/
+        }
+    }
+
+    fun sendSwapCompleteEvent() {
+        viewModelScope.launch {
+            val currentUser = prefsApi.getUserData()
+            val tokenData = prefsApi.getBookedTokenDetails()
+/*            analyticsApi.postEvent(
+                event = "swap_complete",
+                values = mapOf(
+                    "user_id" to currentUser?.userId.orEmpty(),
+                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+                    "mobile_number" to currentUser?.phone.orEmpty(),
+                    "timestamp" to currentTimeMillis(),
+                    "station_id" to tokenData?.bookingStation?.stationId.orZero(),
+                    "is_diy" to tokenData?.isDiyToken.toString()
+                )
+            )*/
+        }
+    }
+
+    fun sendMultiYcuCtaBtnClickedEvent(
+        actionName: String,
+        isSubmitButton: Boolean,
+        status: Boolean,
+        failureReason: String
+    ) {
+        viewModelScope.launch {
+            val commonValues = commonAnalyticsParamsProvider.get()
+            val tokenData = prefsApi.getBookedTokenDetails()
+            val otherValues = if(isSubmitButton) {
+                mapOf(
+                    "status" to (if (status) "success" else "failed"),
+                    "failure_reason" to failureReason,
+                    "ycu_number" to _state.value.ycuQrCode
+                )
+            }else{
+                mapOf()
+            }
+/*            analyticsApi.postEvent(
+                event = "multi_ycu_cta_btn",
+                values = commonValues + mapOf(
+                    "is_diy" to tokenData?.isDiyToken.toString(),
+                    "action_name" to actionName,
+                ) + otherValues
+            )*/
         }
     }
 
@@ -1139,7 +1332,8 @@ class DiySwapInProgressViewModel(
         cleanupSession()
     }
 
-    internal class Factory(
+
+    class Factory(
         private val initializeBleSessionUseCase: InitializeBleSessionUseCase,
         private val startSwapUseCase: StartSwapUseCase,
         private val swapStatusUseCase: SwapStatusUseCase,
@@ -1149,6 +1343,7 @@ class DiySwapInProgressViewModel(
         private val commonSessionConfigFactory: CommonSessionConfigFactory,
         private val getTokenStatusUseCase: GetTokenStatusUseCase,
         private val autoDialerRequestUseCase: AutoDialerRequestUseCase,
+        private val triggerAccessTypeUseCase: TriggerAccessTypeUseCase,
         private val submitChargedBatteryQrUseCase: SubmitChargedBatteryQrUseCase,
         private val getUserDetailsUseCase: GetUserDetailsUseCase,
         private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
@@ -1156,19 +1351,20 @@ class DiySwapInProgressViewModel(
         private val customerSupportCallInteractor: CustomerSupportCallInteractor,
         private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
         private val prefsApi: YumaPrefUtilApi,
-        private val analyticsApi: AnalyticsApi,
+       // private val analyticsApi: AnalyticsApi,
         private val loggerApi: LoggerApi,
-        private val json: Json
+        private val json: Json,
+        private val navigationStateRepository: NavigationStateRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
             DiySwapInProgressViewModel(
                 initializeBleSessionUseCase = initializeBleSessionUseCase,
+                observeResponses = observeResponses,
                 startSwapUseCase = startSwapUseCase,
                 swapStatusUseCase = swapStatusUseCase,
                 submitSwapResultUseCase = submitSwapResultUseCase,
                 cleanupBleSessionUseCase = cleanupBleSessionUseCase,
-                observeResponses = observeResponses,
                 commonSessionConfigFactory = commonSessionConfigFactory,
                 getTokenStatusUseCase = getTokenStatusUseCase,
                 autoDialerRequestUseCase = autoDialerRequestUseCase,
@@ -1178,8 +1374,9 @@ class DiySwapInProgressViewModel(
                 smartSwapSubmitUseCase = smartSwapSubmitUseCase,
                 customerSupportCallInteractor = customerSupportCallInteractor,
                 commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                triggerAccessTypeUseCase = triggerAccessTypeUseCase,
+                navigationStateRepository = navigationStateRepository,
                 prefsApi = prefsApi,
-                analyticsApi = analyticsApi,
                 loggerApi = loggerApi,
                 json = json,
             ) as T
@@ -1190,4 +1387,4 @@ sealed class DiySwapInProgressUiEvent {
     data class SwapCompleted(val swapTime: String) : DiySwapInProgressUiEvent()
     data class ShowSuccessSnackbar(val message: String) : DiySwapInProgressUiEvent()
     data class ShowError(val message: String) : DiySwapInProgressUiEvent()
-}*/
+}

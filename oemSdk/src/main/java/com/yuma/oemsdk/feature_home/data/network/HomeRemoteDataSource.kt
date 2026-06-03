@@ -40,6 +40,7 @@ import com.yumaoem.feature_home.data.dto.token_status.response.TokenStatusRespon
 import com.yumaoem.feature_home.data.dto.whatsapp_support_details.SupportDetailsDTO
 import com.yumaoem.feature_home.data.dto.tag_battery.request.TagBatteryRequestDTO
 import com.yumaoem.feature_home.data.dto.GenericSuccessResponseDto
+import com.yumaoem.feature_home.data.dto.verify_batteries.request.VerifyBatteriesDTO
 import com.yumaoem.feature_home.data.dto.whatsapp_support_details.SupportDetailsRequestDto
 import com.yumaoem.feature_home.data.network.util.Endpoints
 import com.yumaoem.feature_home.data.network.util.Endpoints.CREATE_ORDER
@@ -167,12 +168,12 @@ class HomeRemoteDataSource (
     }
 
     suspend fun getDropOffScreen(
-        clientUserId:Int
+        clientVehicleId:Int
     ) = getResult<DropOffScreenResponseDTO> {
         val client = httpClientApi.getAuthenticatedHttpClient()
         client.get {
             url(Endpoints.DROP_OFF_SCREEN)
-            parameter("clientUserId", clientUserId)
+            parameter("clientVehicleId", clientVehicleId)
         }
     }
 
@@ -293,6 +294,14 @@ class HomeRemoteDataSource (
         val client = httpClientApi.getAuthenticatedHttpClient()
         client.post {
             url(urlString = CREATE_ORDER)
+            setBody(request)
+        }
+    }
+
+    suspend fun verifyBatteryDetails(request: VerifyBatteriesDTO) = getResult<Boolean> {
+        val client = httpClientApi.getAuthenticatedHttpClient()
+        client.post {
+            url(Endpoints.VERIFY_BATTERIES)
             setBody(request)
         }
     }

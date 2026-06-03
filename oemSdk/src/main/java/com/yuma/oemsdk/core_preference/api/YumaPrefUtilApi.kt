@@ -15,6 +15,10 @@ interface YumaPrefUtilApi {
 
     suspend fun getBearerTokens(): BearerTokens?
 
+    suspend fun saveOrderId(orderId: Int)
+
+    suspend fun getOrderId():  Int?
+
     suspend fun getUserData(): User?
 
     suspend fun saveBookedTokenDetails(bookedTokenDetails: BookedTokenDetailsDTO)

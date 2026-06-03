@@ -1,6 +1,7 @@
 package com.yumaoem.feature_home.presentation.home_screen.tag_battery
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.currentTimeMillis
@@ -9,8 +10,8 @@ import com.yumaoem.core.utils.qr_validator.QR_Patterns.BATTERY_CODE_SEPARATOR
 import com.yumaoem.core.utils.vibration.vibrate
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
-import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
 import com.yumaoem.feature_home.common.customer_support.CustomerSupportCallInteractor
+import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
 import com.yumaoem.feature_home.data.dto.tag_battery.request.TagBatteryRequestDTO
 import com.yumaoem.feature_home.domain.usecase.tag_battery.MapNewBatteriesOnBikeUseCase
 import kotlinx.coroutines.Job
@@ -29,7 +30,7 @@ class TagBatteryViewModel(
     //private val analyticsApi: AnalyticsApi,
     private val coreLocationProvider: CoreLocationProvider,
     private val customerSupportCallInteractor: CustomerSupportCallInteractor
-): ViewModel() {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(TagBatteryScreenState())
     val state: StateFlow<TagBatteryScreenState> = _state
@@ -54,15 +55,17 @@ class TagBatteryViewModel(
     fun onEvent(event: DiyScanBatteryIntent) {
         when (event) {
             DiyScanBatteryIntent.OnFlashLightClicked -> {
-              _state.update { current ->
-                  current.copy(
-                      isFlashLightOn = !current.isFlashLightOn
-                  )
-              }
+                _state.update { current ->
+                    current.copy(
+                        isFlashLightOn = !current.isFlashLightOn
+                    )
+                }
             }
+
             is DiyScanBatteryIntent.OnScanCompleted -> {
                 onBatteryScanned(event)
             }
+
             DiyScanBatteryIntent.RetryScan -> {}
 
             DiyScanBatteryIntent.OnScreenViewed -> {
@@ -74,8 +77,8 @@ class TagBatteryViewModel(
 
     private fun onBatteryScanned(event: DiyScanBatteryIntent.OnScanCompleted) {
         if (_state.value.isSubmitting.not()) {
-            validateAndStoreBatteryQr(event.scannedCode,event.isManualEntry)
-            }
+            validateAndStoreBatteryQr(event.scannedCode, event.isManualEntry)
+        }
     }
 
     private fun validateAndStoreBatteryQr(batteryQr: String, isManualEntry: Boolean) {
@@ -143,7 +146,7 @@ class TagBatteryViewModel(
                     clientVehicleId = userDetails.clientVehicleId,
                     currentBatteryQrcodes = updatedList,
                     userId = userDetails.userId.toInt(),
-                    clientUserId = userDetails.clientUserId,
+                    clientCityId = userDetails.clientCityId,
                     batteryCount = userDetails.batteryCount,
                     currentLatitude = currentLocation.latitude,
                     currentLongitude = currentLocation.longitude
@@ -172,6 +175,7 @@ class TagBatteryViewModel(
             _uiEvent.send(TagBatteryUiEvent.ShowError(message))
         }
     }
+
     fun showCustomerSupportBottomSheet() {
         viewModelScope.launch {
             val mobileNumber = prefsApi.getUserData()?.phone
@@ -193,7 +197,7 @@ class TagBatteryViewModel(
     }
 
 
-    fun requestCall (contactNumber: String) {
+    fun requestCall(contactNumber: String) {
         viewModelScope.launch {
             customerSupportCallInteractor
                 .requestCall(contactNumber)
@@ -259,6 +263,25 @@ class TagBatteryViewModel(
 //                )
             //)
         }
+    }
+
+    class Factory(
+        private val mapNewBatteriesOnBikeUseCase: MapNewBatteriesOnBikeUseCase,
+        private val prefsApi: YumaPrefUtilApi,
+        private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
+        //private val analyticsApi: AnalyticsApi,
+        private val coreLocationProvider: CoreLocationProvider,
+        private val customerSupportCallInteractor: CustomerSupportCallInteractor
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            TagBatteryViewModel(
+                mapNewBatteriesOnBikeUseCase = mapNewBatteriesOnBikeUseCase,
+                prefsApi = prefsApi,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                coreLocationProvider = coreLocationProvider,
+                customerSupportCallInteractor = customerSupportCallInteractor
+            ) as T
     }
 }
 

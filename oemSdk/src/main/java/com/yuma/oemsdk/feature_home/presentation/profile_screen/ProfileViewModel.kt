@@ -82,23 +82,6 @@ class ProfileViewModel(
             sendUserLogoutEvent()
             val userId: String? = prefUtilApi.getUserData()?.userId
             val refreshToken: String = prefUtilApi.getBearerTokens()?.refreshToken.orEmpty()
-            logoutUserUseCase.invoke(
-                LogoutUserRequestDTO(refreshToken = refreshToken)
-            ).collect(
-                onLoading = {},
-                onSuccess = {
-                    if (userId != null) {
-                        dataSource.removeFCMToken(
-                            request = RemoveFcmTokenRequestDto(
-                                userId = userId.toInt()
-                            )
-                        )
-                    }
-                    //analyticsApi.resetUser()
-                    _uiEvent.send(ProfileScreenUiEvent.UserLoggedOut)
-                },
-                onError = { errorMessage, _ -> }
-            )
         }
     }
 

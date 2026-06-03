@@ -53,7 +53,7 @@ fun HomeScreenHost(
     onUserLoggedOut: () -> Unit,
     exitSdk: () -> Unit
 ) {
-    //val yumaPrefUtilApi = koinInject<YumaPrefUtilApi>()
+    val yumaPrefUtilApi = YumaSdk.prefManager
 
     var hideBottomBar by remember { mutableStateOf(false) }
     var isB2CCustomer by remember { mutableStateOf(false) }

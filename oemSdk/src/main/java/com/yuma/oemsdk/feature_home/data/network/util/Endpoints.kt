@@ -2,7 +2,7 @@ package com.yumaoem.feature_home.data.network.util
 
 object Endpoints {
 
-    const val BOOK_TOKEN = "token/book"
+    const val BOOK_TOKEN = "/token/v2/book"
 
     const val ALL_CHARGING_STATIONS = "charging-stations/cs/nearby"
 
@@ -22,20 +22,20 @@ object Endpoints {
 
     const val TOKEN_STATUS = "token/token-status"
 
-    const val DROP_OFF_SCREEN = "token/screen"
+    const val DROP_OFF_SCREEN = "token/v2/screen/client-vehicle"
 
     const val GET_CURRENT_BATTERY_DETAILS = "batteries/client-vehicle"
 
 
     const val GET_SWAP_HISTORY = "vehicle-battery-swap-logs/v2/history"
 
-    const val WHATSAPP_HELP = "token/whatsapp/help"
+    const val WHATSAPP_HELP = "token/v2/whatsapp/help"
 
     const val REMOVE_FCM_TOKEN = "push-notification/remove-fcm-token"
 
     const val START_DIY_SWAP = "yuzen/oem/diy-swap-details"
 
-    const val YUZEN_DEV_BASE_URL = "https://backend-api.yumax.app/"
+    const val YUZEN_DEV_BASE_URL = "https://preprod-backend-api.yumax.app/"
 
     const val VALIDATE_LOCATION = "token/validate-location"
 
@@ -51,7 +51,9 @@ object Endpoints {
 
     const val CREATE_ORDER = "plans/buy-plan"
 
-    const val TAG_BATTERY = "yuzen/oem/map-new-batteries-on-bike"
+    const val TAG_BATTERY = "yuzen/oem/map-new-batteries-on-bike-v2"
+
+    const val VERIFY_BATTERIES = "batteries/verify"
 }
 
 object DummyEndpoints {

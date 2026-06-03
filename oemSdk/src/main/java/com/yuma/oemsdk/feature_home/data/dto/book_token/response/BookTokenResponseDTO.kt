@@ -48,7 +48,13 @@ data class BookTokenResponseDTO(
 	val bookingStation: StationOperationStatusResponseDTO? = null,
 
 	@SerialName("isNewDiyUser")
-	val isNewDiyUser: Boolean? = null
+	val isNewDiyUser: Boolean? = null,
+
+	@SerialName("isBatteryVerificationRequired")
+	val isBatteryVerificationRequired: Boolean? = null,
+
+	@SerialName("isBatteryVerified")
+	val isBatteryVerified: Boolean? = null
 ) {
 	fun toDomain() = BookedTokenDetails(
 		isDiyToken = isDiyToken,
@@ -64,6 +70,8 @@ data class BookTokenResponseDTO(
 		batteryType = batteryType,
 		batteryCount = batteryCount,
 		isNewDiyUser = isNewDiyUser?:false,
-		bookingStation = bookingStation?.toYumaStationMarker()
+		bookingStation = bookingStation?.toYumaStationMarker(),
+		isBatteryVerificationRequired = isBatteryVerificationRequired ?: false,
+		isBatteryVerified = isBatteryVerified ?: false
 	)
 }

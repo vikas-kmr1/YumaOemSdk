@@ -1,6 +1,7 @@
 package com.yumaoem.feature_home.presentation.home_screen.tag_battery
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -11,6 +12,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.yuma.oemsdk.YumaSdk
 
 import com.yumaoem.core_ui.components.snackbar.SuccessSnackbar
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
@@ -26,13 +30,13 @@ fun TagBatteryScannerScreenRoot(
     navigateToMapScreen: () -> Unit,
 ) {
 
-    //val viewModel = koinViewModel<TagBatteryViewModel>()
-    //val state = viewModel.state.collectAsState()
-/*
+   val viewModel: TagBatteryViewModel = viewModel(factory = YumaSdk.tagBatteryViewModelFactory)
+    val state = viewModel.state.collectAsState()
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    BackHandler { }(enabled = true) {
+    BackHandler(enabled = true) {
         navigateToMapScreen()
     }
 
@@ -83,8 +87,9 @@ fun TagBatteryScannerScreenRoot(
                     SuccessSnackbar(data = data)
                 }
             }
-        ) {
+        ) {innerPadding ->
             DiyScanBatteryScreen(
+                modifier = Modifier.padding(innerPadding),
                 onBackClicked = navigateToMapScreen,
                 onFlashLightClicked = {
                     viewModel.onEvent(DiyScanBatteryIntent.OnFlashLightClicked)
@@ -102,7 +107,7 @@ fun TagBatteryScannerScreenRoot(
                 totalBatteryCount = state.value.totalBatteryCount,
             )
         }
-    }*/
+    }
 }
 
 @Composable

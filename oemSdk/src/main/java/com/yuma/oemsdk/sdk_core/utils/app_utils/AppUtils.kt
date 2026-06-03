@@ -11,6 +11,8 @@ import com.yumaoem.core.utils.global_events.controller.EventController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.tasks.await
 import kotlin.system.exitProcess
 
 fun closeApp() {
@@ -32,7 +34,7 @@ fun hideKeyboard() {
 
 
 suspend fun getFcmToken(): String {
-    return  "" //FirebaseMessaging.getInstance().token.await()
+    return  FirebaseMessaging.getInstance().token.await()
 }
 
 fun isAndroid12OrLower(): Boolean {

@@ -1,12 +1,14 @@
 package com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen
 
+//import com.yumacustomer.core_analytics.api.AnalyticsApi
+//import com.yumacustomer.core_logger.api.LoggerApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-//import com.yumacustomer.core_analytics.api.AnalyticsApi
-//import com.yumacustomer.core_logger.api.LoggerApi
+import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.utils.app_utils.isAndroid12OrLower
 import com.yumaoem.core.utils.bluetooth.BluetoothController
 import com.yumaoem.core.utils.bluetooth.isBluetoothEnabled
@@ -15,25 +17,31 @@ import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.currentTimeMillis
 import com.yumaoem.core.utils.global_events.EnableBluetoothEvent
 import com.yumaoem.core.utils.global_events.controller.EventController
-import com.yumaoem.core.utils.map_style.calculateDistanceInMeters
 import com.yumaoem.core.utils.orFalse
 import com.yumaoem.core.utils.orZero
+import com.yumaoem.core.utils.qr_validator.BatteryQrValidator
+import com.yumaoem.core.utils.qr_validator.QR_Patterns.BATTERY_CODE_SEPARATOR
+import com.yumaoem.core.utils.sound.playBeep
+import com.yumaoem.core.utils.vibration.vibrate
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
+import com.yumaoem.feature_home.common.customer_support.CustomerSupportCallInteractor
 import com.yumaoem.feature_home.common.toDomain
 import com.yumaoem.feature_home.common.util.analytics_utils.CommonAnalyticsParamsProvider
 import com.yumaoem.feature_home.common.util.openMapsDirections
 import com.yumaoem.feature_home.data.dto.beacon_details.request.BeaconDetailsRequest
+import com.yumaoem.feature_home.data.dto.check_in_user.location_validation.LocationValidationRequestDTO
+import com.yumaoem.feature_home.data.dto.verify_batteries.request.VerifyBatteriesDTO
 import com.yumaoem.feature_home.domain.usecase.beacon_details.GetBeaconDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.CancelTokenBookingUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.CheckInUserUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.ObserveTokenExpiryCountdownUseCase
 import com.yumaoem.feature_home.domain.usecase.checkin_screen.ValidateLocationUseCase
-import com.yumaoem.feature_home.data.dto.check_in_user.location_validation.LocationValidationRequestDTO
-import com.yumaoem.feature_home.domain.model.token_flow.battery_details.BatteryDetails
 import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDetailsUseCase
+import com.yumaoem.feature_home.domain.usecase.verify_batteries.VerifyBatteriesUseCase
+import com.yumaoem.feature_home.presentation.home_screen.tag_battery.DiyScanBatteryIntent
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.state.DialogState
 import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.state.TokenDetailsScreenState
 import kotlinx.coroutines.Job
@@ -54,9 +62,11 @@ class TokenDetailsViewModel(
     private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
     private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
     private val locationProvider: CoreLocationProvider,
-    //private val loggerApi: LoggerApi,
+    private val loggerApi: LoggerApi,
     private val validateLocationUseCase: ValidateLocationUseCase,
-   // private val analyticsApi: AnalyticsApi
+    private val customerSupportCallInteractor: CustomerSupportCallInteractor,
+    private val verifyBatteriesUseCase: VerifyBatteriesUseCase,
+    // private val analyticsApi: AnalyticsApi
 ) : ViewModel() {
     var state by mutableStateOf(TokenDetailsScreenState())
         private set
@@ -132,11 +142,11 @@ class TokenDetailsViewModel(
                     handleCheckInAtStation()
                 } else {
                     viewModelScope.launch {
-                       EventController.sendEvent(EnableBluetoothEvent(
-                           onBluetoothEnabled = {
-                               handleCheckInAtStation()
-                           }
-                       ))
+                        EventController.sendEvent(EnableBluetoothEvent(
+                            onBluetoothEnabled = {
+                                handleCheckInAtStation()
+                            }
+                        ))
                     }
                 }
             }
@@ -162,8 +172,54 @@ class TokenDetailsViewModel(
                 )
                 startBluetoothDevicesScan()
             }
+
+            TokenDetailsScreenEvent.OnBackClicked -> {
+                state = state.copy(
+                    showBatteryVerificationScreen = false,
+                    batteryQrList = emptyList()
+                )
+            }
+
+            TokenDetailsScreenEvent.OnBatteryVerification -> {
+                loggerApi.logDWithTag("Verification"," required - ${state.isBatteryVerificationRequired} , completed - ${state.batteryVerificationCompleted} ")
+                state = state.copy(
+                    showBatteryVerificationScreen = true
+                )
+            }
+
+            TokenDetailsScreenEvent.ResetScanState -> {
+                state = state.copy(
+                    batteryQrList = emptyList(),
+                    dialogState = DialogState.None
+                )
+            }
         }
     }
+
+    fun onEvent(event: DiyScanBatteryIntent) {
+        when (event) {
+            DiyScanBatteryIntent.OnFlashLightClicked -> {
+                state = state.copy(
+                    isFlashLightOn = !state.isFlashLightOn
+                )
+            }
+
+            is DiyScanBatteryIntent.OnScanCompleted -> {
+                onBatteryScanned(event)
+            }
+
+            is DiyScanBatteryIntent.RetryScan -> {
+
+            }
+
+            is DiyScanBatteryIntent.OnScreenViewed -> {
+                state = state.copy(
+                    showBatteryVerificationScreen = true
+                )
+            }
+        }
+    }
+
 
     private fun handleCheckInAtStation() {
         beaconSearchRetriesLeft = MAX_ALLOWED_BEACON_SEARCH_RETRIES
@@ -241,7 +297,7 @@ class TokenDetailsViewModel(
     private fun checkUserDistance() {
         viewModelScope.launch {
             val userLocation = locationProvider.getCurrentLocation()
-            if (userLocation==null){
+            if (userLocation == null) {
                 SnackbarController.sendEvent(
                     event = SnackbarEvent("User's location not found")
                 )
@@ -290,13 +346,17 @@ class TokenDetailsViewModel(
         }
     }
 
+
     init {
         viewModelScope.launch {
             val tokenData = prefUtilApi.getBookedTokenDetails()
             if (tokenData != null) {
                 state = state.copy(
                     bookedTokenDetails = tokenData.toDomain(),
-                    idDiySwap = tokenData.isDiyToken
+                    idDiySwap = tokenData.isDiyToken,
+                    isBatteryVerificationRequired = tokenData.isBatteryVerificationRequired,
+                    totalBatteryCount = tokenData.batteryCount,
+                    batteryVerificationCompleted = tokenData.isBatteryVerified
                 )
                 getBeaconDetails()
                 startTokenCountdown(expiryTimestamp = tokenData.tokenExpiryTimeStamp)
@@ -312,6 +372,7 @@ class TokenDetailsViewModel(
                     state.beaconDetails?.map { it.uuid }?.toSet() ?: emptySet()
 
                 val hasMatch = scannedList.any { it.address in beaconMacIds }
+
                 if (hasMatch && isBeaconMatchFound.not()) {
                     isBeaconMatchFound = true
                     bluetoothController.stopDiscovery()
@@ -356,7 +417,11 @@ class TokenDetailsViewModel(
     fun validateLocation(latitude: Double, longitude: Double, tokenId: Int) {
         viewModelScope.launch {
             validateLocationUseCase(
-                LocationValidationRequestDTO(latitude = latitude, longitude = longitude, tokenId = tokenId)
+                LocationValidationRequestDTO(
+                    latitude = latitude,
+                    longitude = longitude,
+                    tokenId = tokenId
+                )
             ).collect(
                 onLoading = {
                     state = state.copy(
@@ -364,9 +429,9 @@ class TokenDetailsViewModel(
                     )
                 },
                 onSuccess = {
-                    if (it.isLocationValid){
+                    if (it.isLocationValid) {
                         checkInUser()
-                    }else{
+                    } else {
                         state = state.copy(
                             dialogState = DialogState.ReachStation,
                             isCheckInButtonLoading = false
@@ -382,6 +447,115 @@ class TokenDetailsViewModel(
                     )
                 }
             )
+        }
+    }
+
+    private fun onBatteryScanned(event: DiyScanBatteryIntent.OnScanCompleted) {
+        if (state.isSubmitting.not()) {
+            validateAndStoreBatteryQr(event.scannedCode,event.isManualEntry)
+        }
+    }
+
+
+    private fun validateAndStoreBatteryQr(batteryQr: String, isManualEntry: Boolean) {
+        if (batteryQr.isEmpty() || state.isSubmitting) return
+
+        val isValid = BatteryQrValidator.validateBatteryQr(input = batteryQr)
+        val alreadyExists = state.batteryQrList.contains(batteryQr)
+
+        when {
+            !isValid -> {
+                if(isYcuQrCode(batteryQr)){
+                    state = state.copy(
+                        dialogState = DialogState.ScanBattery
+                    )
+                }else {
+                    viewModelScope.launch {
+                        _uiEvent.emit(TokenDetailsScreenUiEvent.ShowSnackbar("Invalid QR Code"))
+                    }
+                }
+            }
+            alreadyExists -> {}
+            else -> {
+                saveBatteryQr(batteryQr, isManualEntry)
+            }
+        }
+    }
+
+    private fun saveBatteryQr(batteryQr: String, isManualEntry: Boolean) {
+        val newQr = batteryQr.substringBefore(BATTERY_CODE_SEPARATOR)
+
+        if (newQr !in state.batteryQrList) {
+            vibrate(150)
+            playBeep()
+
+            val updatedList = state.batteryQrList + newQr
+
+            if (updatedList.size == state.totalBatteryCount) {
+                validateChargedBatteryQr(updatedList, isManualEntry)
+            }
+
+            state = state.copy(batteryQrList = updatedList)
+        }
+    }
+
+    private fun validateChargedBatteryQr(
+        updatedList: List<String>,
+        isManualEntry: Boolean
+    ) {
+        viewModelScope.launch {
+            val userDetails = prefUtilApi.getUserData()
+            val request = VerifyBatteriesDTO(
+                clientVehicleId = userDetails?.clientVehicleId ?: 0,
+                scannedBatteryQrCodes = updatedList,
+                tokenId = state.bookedTokenDetails?.tokenID?.toLong() ?: 0
+            )
+            verifyBatteriesUseCase.invoke(
+                request
+            ).collect(
+                onLoading = {
+                    state = state.copy(isSubmitting = true)
+                },
+                onSuccess = {
+                    if(it.data) {
+                        persistBatteryVerifiedFlag()
+                        state = state.copy(
+                            batteryVerificationCompleted = true,
+                            showBatteryVerificationScreen = false
+                        )
+                        onEvent(TokenDetailsScreenEvent.CheckInAtStationClicked)
+                    }else{
+                        state = state.copy(
+                            dialogState = DialogState.WrongBattery,
+                        )
+                    }
+                    state = state.copy(isSubmitting = false)
+                },
+                onError = { errorMessage, _ ->
+                    state = state.copy(
+                        isSubmitting = false,
+                        dialogState = DialogState.WrongBattery
+                    )
+                }
+            )
+        }
+    }
+
+
+
+    fun isYcuQrCode(code: String): Boolean {
+        val pattern = Regex("^[Yy][NnMm][0-9][a-zA-Z][0-9]{5}$")
+        return pattern.matches(code)
+    }
+
+    private fun persistBatteryVerifiedFlag() {
+        viewModelScope.launch {
+            val tokenData = prefUtilApi.getBookedTokenDetails()
+            if (tokenData != null) {
+                prefUtilApi.saveBookedTokenDetails(
+                    tokenData.copy(isBatteryVerified = true)
+                )
+            }
         }
     }
 
@@ -410,7 +584,7 @@ class TokenDetailsViewModel(
             val currentUser = prefUtilApi.getUserData()
             val tokenData = prefUtilApi.getBookedTokenDetails()
             val location = locationProvider.getCurrentLocation()
-     /*       analyticsApi.postEvent(
+/*            analyticsApi.postEvent(
                 event = "check_in_at_station",
                 values = mapOf(
                     "user_id" to currentUser?.userId.orEmpty(),
@@ -437,7 +611,7 @@ class TokenDetailsViewModel(
             val currentUser = prefUtilApi.getUserData()
             val tokenData = prefUtilApi.getBookedTokenDetails()
             val location = locationProvider.getCurrentLocation()
-/*            analyticsApi.postEvent(
+ /*           analyticsApi.postEvent(
                 event = "booking_cancelled",
                 values = mapOf(
                     "user_id" to currentUser?.userId.orEmpty(),
@@ -463,6 +637,90 @@ class TokenDetailsViewModel(
         const val MAXIMUM_ALLOWED_CHECK_IN_DISTANCE_IN_METRES = 100
         const val MAX_ALLOWED_BEACON_SEARCH_RETRIES = 2
         const val BEACON_SEARCH_TIMEOUT_IN_MILLIS: Long = 3000
+    }
+
+    fun showCustomerSupportBottomSheet() {
+        viewModelScope.launch {
+            val mobileNumber = prefUtilApi.getUserData()?.phone
+            state = state.copy(
+                dialogState = DialogState.CustomerSupport(
+                    mobileNumber = mobileNumber.orEmpty(),
+                    isLoading = false
+                )
+            )
+        }
+    }
+
+    fun dismissBottomSheet() {
+        viewModelScope.launch {
+            state = state.copy(
+                dialogState = DialogState.None
+            )
+        }
+    }
+
+    fun requestCall(contactNumber: String) {
+        viewModelScope.launch {
+            customerSupportCallInteractor
+                .requestCall(contactNumber)
+                .collect(
+                    onLoading = {
+                        state = state.copy(
+                            dialogState = DialogState.CustomerSupport(
+                                mobileNumber = contactNumber,
+                                isLoading = true
+                            )
+                        )
+                    },
+                    onSuccess = {
+                        state = state.copy(
+                            dialogState = DialogState.None
+                        )
+                        _uiEvent.emit(TokenDetailsScreenUiEvent.ShowSnackbar(it.message))
+                    },
+                    onError = { errorMessage, _ ->
+                        state = state.copy(
+                            dialogState = DialogState.None
+                        )
+                        _uiEvent.emit(TokenDetailsScreenUiEvent.ShowSnackbar(errorMessage))
+                    }
+                )
+        }
+    }
+
+    class Factory(
+        private val bluetoothController: BluetoothController,
+        private val observeTokenExpiryCountdownUseCase: ObserveTokenExpiryCountdownUseCase,
+        private val getBeaconDetailsUseCase: GetBeaconDetailsUseCase,
+        private val checkInUserUseCase: CheckInUserUseCase,
+        private val cancelTokenBookingUseCase: CancelTokenBookingUseCase,
+        private val prefUtilApi: YumaPrefUtilApi,
+        private val commonAnalyticsParamsProvider: CommonAnalyticsParamsProvider,
+        private val getBatteryDetailsUseCase: GetBatteryDetailsUseCase,
+        private val locationProvider: CoreLocationProvider,
+        private val loggerApi: LoggerApi,
+        private val validateLocationUseCase: ValidateLocationUseCase,
+        private val customerSupportCallInteractor: CustomerSupportCallInteractor,
+        private val verifyBatteriesUseCase: VerifyBatteriesUseCase,
+        // private val analyticsApi: AnalyticsApi
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            TokenDetailsViewModel(
+                bluetoothController = bluetoothController,
+                observeTokenExpiryCountdownUseCase = observeTokenExpiryCountdownUseCase,
+                getBeaconDetailsUseCase = getBeaconDetailsUseCase,
+                checkInUserUseCase = checkInUserUseCase,
+                cancelTokenBookingUseCase = cancelTokenBookingUseCase,
+                prefUtilApi = prefUtilApi,
+                commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
+                getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                locationProvider = locationProvider,
+                loggerApi = loggerApi,
+                validateLocationUseCase = validateLocationUseCase,
+                customerSupportCallInteractor = customerSupportCallInteractor,
+                verifyBatteriesUseCase = verifyBatteriesUseCase
+            ) as T
     }
 
 

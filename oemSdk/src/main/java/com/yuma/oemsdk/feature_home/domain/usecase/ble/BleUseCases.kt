@@ -27,7 +27,7 @@ class SwapStatusUseCase(
     private val repository: YumaBleRepository
 ) {
     suspend operator fun invoke(tokenId: Long) : SwapStatusResultDto {
-       return repository.swapStatus(tokenId)
+        return repository.swapStatus(tokenId)
     }
 }
 
@@ -53,6 +53,14 @@ class CleanupBleSessionUseCase(
 ) {
     suspend operator fun invoke() {
         repository.cleanupSession()
+    }
+}
+
+class TriggerAccessTypeUseCase(
+    private val repository: YumaBleRepository
+) {
+    suspend operator fun invoke() {
+        repository.triggerAccessType()
     }
 }
 

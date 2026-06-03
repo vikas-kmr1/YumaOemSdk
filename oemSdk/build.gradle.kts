@@ -63,6 +63,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.material)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.icons.extended)
+
+    // CameraX for camera preview & lifecycle
+    implementation(libs.bundles.camerax)
+    // ML Kit barcode scanning (bundled model — works offline)
+    implementation(libs.mlkit.barcode.scanning)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -90,14 +96,16 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation) // JSON content type handling
     implementation(libs.ktor.client.logging)           // Network logging
     implementation(libs.ktor.serialization.kotlinx.json) // JSON parsing via Ktor
+    implementation(libs.touchlab.kermit)//logging
 
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.datetime.v061)
 
     implementation(libs.coroutines.core)
-
     implementation(libs.lottie.compose)
-    implementation(libs.touchlab.kermit)
+
+    implementation(project.dependencies.platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+
     implementation("com.segment.analytics.kotlin:android:1.16.3")
 
     api(libs.moko.permissions)
@@ -106,7 +114,10 @@ dependencies {
     api(libs.permissions.location)
     api(libs.permissions.notifications)
 
+
     implementation(project(":new-ble-sdk"))
+
+    implementation(libs.cashfree)
 
     // Network inspection (Debug only)
     debugImplementation(libs.inspektify.ktor3)
@@ -128,7 +139,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.vikas-kmr1"
                 artifactId = "oem_sdk_beta"
-                version = "1.0.1"
+                version = "1.0.2-beta"
             }
         }
     }

@@ -196,6 +196,24 @@ class PaymentDetailsViewmodel(
         }
     }
 
+    class Factory(
+        private val createOrderUseCase: CreateOrderUseCase,
+        private val getPaymentStatusUseCase: GetPaymentStatusUseCase,
+        private val paymentManager: PaymentManager,
+        private val preferenceApi: YumaPrefUtilApi,
+        private val loggerApi: LoggerApi
+    ) : androidx.lifecycle.ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return PaymentDetailsViewmodel(
+                createOrderUseCase,
+                getPaymentStatusUseCase,
+                paymentManager,
+                preferenceApi,
+                loggerApi
+            ) as T
+        }
+    }
 }
 
 enum class PaymentStatus {

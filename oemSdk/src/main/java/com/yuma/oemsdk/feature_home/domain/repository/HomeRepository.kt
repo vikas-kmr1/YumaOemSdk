@@ -19,6 +19,7 @@ import com.yumaoem.feature_home.data.dto.check_in_user.location_validation.Locat
 import com.yumaoem.feature_home.data.dto.logout.LogoutResponseDTO
 import com.yumaoem.feature_home.data.dto.logout.LogoutUserRequestDTO
 import com.yumaoem.feature_home.data.dto.revert_token_checkin.RevertTokenCheckInResponseDTO
+import com.yumaoem.feature_home.data.dto.verify_batteries.request.VerifyBatteriesDTO
 import com.yumaoem.feature_home.domain.model.drop_off_data.DropOffScreenData
 import com.yumaoem.feature_home.domain.model.maps.all_station_markers.YumaStationMarker
 import com.yumaoem.feature_home.domain.model.maps.all_station_markers.YumaStationStatus
@@ -31,6 +32,7 @@ import com.yumaoem.feature_home.domain.model.token_flow.book_token.BookedTokenDe
 import com.yumaoem.feature_home.domain.model.token_flow.cancel_token_booking.CancelTokenResponse
 import com.yumaoem.feature_home.domain.model.token_flow.check_in.CheckInResponse
 import com.yumaoem.feature_home.domain.model.token_flow.token_status.TokenStatus
+import com.yumaoem.feature_home.domain.model.token_flow.verify_batteries.VerifyBatteries
 import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {
@@ -69,7 +71,7 @@ interface HomeRepository {
     ):Flow<RestClientResult<TokenStatus>>
 
     suspend fun getDropOffScreen(
-        clientUserId:Int
+        clientVehicleId: Int
     ):Flow<RestClientResult<DropOffScreenData>>
 
     suspend fun getBatteryDetails(
@@ -98,4 +100,7 @@ interface HomeRepository {
         request: TagBatteryRequestDTO
     ): Flow<RestClientResult<GenericSuccessResponseDto>>
 
+    suspend fun verifyBatteries(
+        request: VerifyBatteriesDTO
+    ): Flow<RestClientResult<VerifyBatteries>>
 }

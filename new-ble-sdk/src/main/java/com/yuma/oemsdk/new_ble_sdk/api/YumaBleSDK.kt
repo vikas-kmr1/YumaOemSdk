@@ -9,6 +9,7 @@ import com.yuma.ble_sdk.config.YumaSDKConfig
 import com.yuma.ble_sdk.data.ble.jdo.LeResponse
 import com.yumacustomer.new_ble_sdk.data.CommonSessionConfig
 import com.yumacustomer.new_ble_sdk.data.SmartSwapSubmitResponse
+import com.yumacustomer.new_ble_sdk.data.SubmitType
 import com.yumacustomer.new_ble_sdk.data.SwapStatusResultDto
 import com.yumacustomer.new_ble_sdk.data.YumaResponse
 import com.yumacustomer.new_ble_sdk.data.YumaResponse.Error
@@ -17,7 +18,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 
-class YumaBleSDK constructor(private val appContext: Context, environment: String) {
+class YumaBleSDK constructor(appContext: Context, environment: String) {
+    val context = appContext
     private var yumaSDK: OEMSDKComponent? = null
     private var isInitializedFlag = false
     private val sdkEnvironment: YumaSDKConfig.Environment = mapEnvironment(environment)
@@ -28,7 +30,7 @@ class YumaBleSDK constructor(private val appContext: Context, environment: Strin
 
     private fun mapEnvironment(env: String): YumaSDKConfig.Environment {
         return when (env.uppercase()) {
-            "DEV" -> YumaSDKConfig.Environment.DEV1
+            "DEV" -> YumaSDKConfig.Environment.DEV3
             "PREPROD", "PRE_PROD" -> YumaSDKConfig.Environment.PREPROD
             "PROD", "PRODUCTION" -> YumaSDKConfig.Environment.PROD
             else -> {
@@ -43,7 +45,7 @@ class YumaBleSDK constructor(private val appContext: Context, environment: Strin
         Log.d(TAG, "SDK Initialize :: sdkVersion: $sdkVersion, environment: $sdkEnvironment")
 
         yumaSDK = YumaSDK.getOEMInstance(
-            context = appContext,
+            context = context,
             environment = sdkEnvironment,
             oemEnvironment = sdkEnvironment,
             isAnalyticsEnabled = enableAnalytics
@@ -65,6 +67,8 @@ class YumaBleSDK constructor(private val appContext: Context, environment: Strin
             currentLongitude = sessionConfig.currentLongitude,
             clientCityId = sessionConfig.clientCityId,
             clientVehicleId = sessionConfig.clientVehicleId,
+            isMultiYcuSwap = sessionConfig.isMultiYcuSwap,
+            partialCompletedCount = sessionConfig.partialCompletedCount
         )
 
         Log.d(TAG, "SDK.init()")
@@ -97,6 +101,11 @@ class YumaBleSDK constructor(private val appContext: Context, environment: Strin
         Log.d(TAG, "SDK.clean()")
         yumaSDK?.clean()
         isInitializedFlag = false
+    }
+
+    suspend fun triggerAccessType() {
+        Log.d(TAG, "SDK.setAccessType()")
+        yumaSDK?.triggerAccessType()
     }
 
     fun getResponseFlow(): Flow<YumaResponse> {
@@ -136,9 +145,12 @@ class YumaBleSDK constructor(private val appContext: Context, environment: Strin
                 id = androidResponse.id
             )
 
-            is LeResponse.NetworkSuccess -> YumaResponse.NetworkSuccess
             is LeResponse.Connected -> YumaResponse.Connected
-            is LeResponse.SubmitSuccess -> YumaResponse.SubmitSuccess
+            is LeResponse.SubmitSuccess -> YumaResponse.SubmitSuccess(
+                id = androidResponse.type.toAppSubmitType(),
+                isMultiYCUSwap = androidResponse.isMultiYCUSwap,
+                partialCompletedCount = androidResponse.partialCompletedCount
+            )
             /**
             is LeResponse.SyncDifferenceRes -> {
             val commonSyncDiff = CommonSyncDifference(
@@ -173,6 +185,17 @@ class YumaBleSDK constructor(private val appContext: Context, environment: Strin
             is LeResponse.ScanningCompleted -> YumaResponse.ScanningCompleted
             is LeResponse.ServiceDiscovered -> YumaResponse.ServiceDiscovered
             is LeResponse.ConfigSet -> YumaResponse.ConfigSet
+            is LeResponse.MultiYCUSwap -> YumaResponse.MultiYcuSwap(
+                isMultiYcuSwap = androidResponse.isMultiYCUSwap,
+                partialCompletedCount = androidResponse.partialCompletedCount
+            )
+        }
+    }
+
+    fun com.yuma.ble_sdk.data.ble.jdo.SubmitType.toAppSubmitType(): SubmitType {
+        return when (this) {
+            com.yuma.ble_sdk.data.ble.jdo.SubmitType.SWAP_SUBMIT -> SubmitType.SWAP_SUBMIT
+            com.yuma.ble_sdk.data.ble.jdo.SubmitType.MANUAL_SWAP_SUBMIT -> SubmitType.MANUAL_SWAP_SUBMIT
         }
     }
 

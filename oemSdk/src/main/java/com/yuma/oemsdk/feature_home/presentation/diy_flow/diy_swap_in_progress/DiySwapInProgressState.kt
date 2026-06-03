@@ -6,6 +6,7 @@ import com.yumaoem.feature_home.domain.model.token_flow.battery_details.BatteryD
 data class DiySwapInProgressState(
     val swapInProgress: Boolean = false,
     val bottomSheet: DiySwapBottomSheet = DiySwapBottomSheet.None,
+    val dialog: DiySwapDialog = DiySwapDialog.None,
     val isConnecting: Boolean = false,
     val isConnected: Boolean = false,
     val isSubmitting: Boolean = false,
@@ -29,7 +30,9 @@ data class DiySwapInProgressState(
     val isBatteryScanEnabled: Boolean = true,
     val isFlashlightOn: Boolean = false,
     val showBikeDetailsBottomSheet: Boolean = false,
-    val bikeDetails: BikeDetails = BikeDetails()
+    val bikeDetails: BikeDetails = BikeDetails(),
+    val isMultiYcuSwap: Boolean = false,
+    val currentBatteryIndex: Int = 1
 )
 
 data class BikeDetails(
@@ -51,4 +54,12 @@ sealed class DiySwapBottomSheet {
     object CBOpenFailed: DiySwapBottomSheet()
     object SwapStatusNotCompleted: DiySwapBottomSheet()
     object RemoteSwapInProgress: DiySwapBottomSheet()
+
+    object DBDoNotInsertBatteryModalSheet: DiySwapBottomSheet()
+}
+
+sealed class DiySwapDialog {
+    object None: DiySwapDialog()
+    object MultiYcuSwapDialog: DiySwapDialog()
+    object SwapInfoDialog: DiySwapDialog()
 }

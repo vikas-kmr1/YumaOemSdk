@@ -34,6 +34,10 @@ android {
     }
 }
 
+val retrofit = "2.9.0"
+val retrofitGsonConvertor = "2.9.0"
+val okhttp3 = "4.9.0"
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -41,8 +45,14 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
-    implementation(files("libs/yuma-ble-sdk-v2.6.1.aar"))
+    implementation("com.squareup.retrofit2:converter-gson:${retrofitGsonConvertor}")
+    implementation ("com.segment.analytics.kotlin:android:1.16.3")
+    implementation("com.squareup.retrofit2:retrofit:${retrofit}")
+    implementation("com.squareup.retrofit2:converter-gson:${retrofitGsonConvertor}")
+    implementation("com.squareup.retrofit2:adapter-rxjava2:${retrofit}")
+    implementation("com.squareup.okhttp3:logging-interceptor:${okhttp3}")
+    implementation("com.squareup.okhttp3:okhttp:${okhttp3}")
+    implementation(files("libs/yuma-ble-sdk-v2.8.13.aar"))
 }
 
 android {
@@ -59,9 +69,9 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.github.vikas-kmr1.YumaOemSdk" // Match root repo logic for JitPack 
+                groupId = "com.github.vikas-kmr1.YumaOemSdk" // Match root repo logic for JitPack
                 artifactId = "new-ble-sdk"
-                version = "1.0.1-beta"
+                version = "1.0.2-beta"
             }
         }
     }

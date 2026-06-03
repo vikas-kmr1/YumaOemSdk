@@ -19,7 +19,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        manifestPlaceholders["YUMA_MAP_API_KEY"] = "DUMMY_KEY"
+        manifestPlaceholders["YUMA_MAP_API_KEY"] = "AIzaSyDgUJfdi2Ba9bh5FrzTIofMDCIFDcK02kM"
     }
 
     buildTypes {

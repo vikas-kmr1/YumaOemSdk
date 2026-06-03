@@ -9,6 +9,7 @@ import com.yumaoem.feature_onboarding.domain.model.verify_otp.response.*
 fun SilentAuthResponseDTO.toDomain(): SilentAuthResponse = SilentAuthResponse(
     accessToken = accessToken.toDomain(),
     refreshToken = refreshToken.toDomain(),
+    orderId = orderId,
     user = userInfo.toDomain()
 )
 

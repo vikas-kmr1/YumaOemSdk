@@ -17,6 +17,8 @@ class CommonSessionConfigFactory(
         tokenId: Long,
         batteryCount: Int,
         batteryType: Int,
+        isMultiSwapYcu: Boolean? = null,
+        partialCompletedCount: Int ?= null
     ): CommonSessionConfig {
         val userData = prefUtil.getUserData()
         val location = locationManager.getCurrentLocation()
@@ -43,7 +45,9 @@ class CommonSessionConfigFactory(
             currentLatitude = location?.latitude.orZero().toString(),
             currentLongitude = location?.longitude.orZero().toString(),
             clientCityId = clientCityId,
-            clientVehicleId = clientVehicleId
+            clientVehicleId = clientVehicleId,
+            isMultiYcuSwap = isMultiSwapYcu,
+            partialCompletedCount = partialCompletedCount
         )
     }
 }

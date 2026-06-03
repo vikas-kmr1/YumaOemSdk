@@ -18,8 +18,8 @@ data class TagBatteryRequestDTO(
     @SerialName("user_id")
     val userId: Int,
 
-    @SerialName("client_user_id")
-    val clientUserId: Int,
+    @SerialName("client_city_id")
+    val clientCityId: Int,
 
     @SerialName("battery_count")
     val batteryCount: Int,

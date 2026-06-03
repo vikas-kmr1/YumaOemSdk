@@ -6,9 +6,12 @@ data class ScanQrUiState(
     val isFlashlightOn: Boolean = false,
     val isScanning: Boolean = true,
     val bottomSheet: ScanQrUiStateBottomSheet = ScanQrUiStateBottomSheet.None,
+    val dialog: ScanQrUiStateDialog = ScanQrUiStateDialog.None,
     val scannedQrCode: String? = null,
     val showIllustrationScreen: Boolean = false,
-    val isQrScan: Boolean = true
+    val isQrScan: Boolean = true,
+    val isMultiYcuSwap: Boolean = false,
+    val currentBatterySwap: Int = 1
 )
 
 sealed class ScanQrUiStateBottomSheet {
@@ -17,4 +20,9 @@ sealed class ScanQrUiStateBottomSheet {
     data class GetCallbackBottomSheet(
         val mobileNumber: String,val isLoading:Boolean
     ): ScanQrUiStateBottomSheet()
+}
+
+sealed class ScanQrUiStateDialog {
+    object None : ScanQrUiStateDialog()
+    object ScanQrCodeDialog : ScanQrUiStateDialog()
 }

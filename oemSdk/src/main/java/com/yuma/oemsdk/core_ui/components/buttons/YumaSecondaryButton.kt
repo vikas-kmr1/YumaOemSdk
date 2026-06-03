@@ -15,6 +15,7 @@ fun YumaSecondaryButton(
     buttonText:String,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
+    isTrailingIconVisible: Boolean = false,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     buttonTextColor: Color = LocalColors.current.red[Colors.TYPE_500.ordinal],
@@ -39,6 +40,7 @@ fun YumaSecondaryButton(
         buttonText = buttonText,
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
+        isTrailingIconVisible = isTrailingIconVisible,
         paddingValues = PaddingValues(bottom = 4.dp,top = 1.dp,start = 1.dp,end = 1.dp)
     )
 }

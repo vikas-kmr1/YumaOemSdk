@@ -28,6 +28,7 @@ fun YumaPrimaryButton(
     buttonTextStyle: TextStyle = LocalTypography.current.bodyLargeSemiBold,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
+    isTrailingIconVisible: Boolean = false,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     enabledButtonShadowColor: Color = YumaAppTheme.colors.neutral[Colors.TYPE_700.ordinal],
@@ -47,18 +48,19 @@ fun YumaPrimaryButton(
     val buttonTextColor = Color.White
 
     YumaButtonInternal(
-       modifier =  modifier,
-       containerColor = containerColor,
-       shadowColor = shadowColor,
-       isLoading = isLoading,
-       onClick = onClick,
-       enabled =  enabled,
-       buttonTextColor = buttonTextColor,
-       buttonText = buttonText,
-       buttonTextStyle = buttonTextStyle,
-       leadingIcon = leadingIcon,
-       trailingIcon = trailingIcon,
-       paddingValues = PaddingValues(bottom = 4.dp,top = 0.dp,start = 0.dp,end = 0.dp)
+        modifier =  modifier,
+        containerColor = containerColor,
+        shadowColor = shadowColor,
+        isLoading = isLoading,
+        onClick = onClick,
+        enabled =  enabled,
+        buttonTextColor = buttonTextColor,
+        buttonText = buttonText,
+        buttonTextStyle = buttonTextStyle,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        isTrailingIconVisible = isTrailingIconVisible,
+        paddingValues = PaddingValues(bottom = 4.dp,top = 0.dp,start = 0.dp,end = 0.dp)
     )
 }
 
@@ -75,7 +77,8 @@ internal fun YumaButtonInternal(
     buttonTextStyle: TextStyle = LocalTypography.current.bodyLargeSemiBold,
     paddingValues: PaddingValues,
     leadingIcon: @Composable() (() -> Unit)?,
-    trailingIcon: @Composable() (() -> Unit)?
+    trailingIcon: @Composable() (() -> Unit)?,
+    isTrailingIconVisible: Boolean
 ) {
     Box(modifier) {
         YumaElevatedCard(
@@ -110,7 +113,9 @@ internal fun YumaButtonInternal(
                         text = buttonText,
                         style = buttonTextStyle,
                     )
-//                    trailingIcon?.invoke()
+                    if(isTrailingIconVisible) {
+                        trailingIcon?.invoke()
+                    }
                 } else {
                     CircularProgressIndicator(
                         modifier = Modifier.then(Modifier.size(32.dp)),

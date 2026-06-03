@@ -36,6 +36,10 @@ class YumaBleRepositoryImpl(
         sdk.clean()
     }
 
+    override suspend fun triggerAccessType() {
+        sdk.triggerAccessType()
+    }
+
     override fun observeResponses(): Flow<YumaResponse> {
         return sdk.getResponseFlow()
     }

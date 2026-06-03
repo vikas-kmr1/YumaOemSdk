@@ -44,7 +44,10 @@
     <string name="confirm_your_number">Confirm your number:</string>
     <string name="receive_call">Receive Call</string>
     <string name="scanning_battery">Scanning Battery</string>
-    <string name="scan_two_batteries_message">Scan the 2 batteries\nreceived, to complete swap</string>
+    <string name="scan_two_batteries_message">Scan the batteries</string>
+    <string name="scan_machine_qr">Scan machine QR</string>
+    <string name="scan_discharged_battery">Scan discharged battery</string>
+    <string name="scan_discharged_batteries">Scan discharged batteries</string>
     <string name="scan_battery_message">Scan the battery received to\ncomplete swap</string>
     <string name="scan_the_battery">Scan the battery</string>
     <string name="battery_count_format">Battery %1$d / %2$d</string>

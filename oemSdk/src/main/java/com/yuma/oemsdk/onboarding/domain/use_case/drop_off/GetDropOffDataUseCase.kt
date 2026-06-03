@@ -9,6 +9,6 @@ class GetDropOffDataUseCase (
     private val repository: HomeRepository
 ) {
     suspend operator fun invoke(
-        clientUserId:Int
-    ): Flow<RestClientResult<DropOffScreenData>> = repository.getDropOffScreen(clientUserId)
+        clientVehicleId:Int
+    ): Flow<RestClientResult<DropOffScreenData>> = repository.getDropOffScreen(clientVehicleId)
 }

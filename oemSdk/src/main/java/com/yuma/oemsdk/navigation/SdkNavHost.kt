@@ -39,7 +39,7 @@ object SilentAuthRoute
 object HomeScreenRoute
 
 @Composable
-internal fun SdkNavHost(onExit: () -> Unit) {
+internal fun SdkNavHost(modifier: Modifier,onExit: () -> Unit) {
     val navController = rememberNavController()
 
     var onboardingStart by remember { mutableStateOf<Any>(SilentAuthRoute) }

@@ -33,6 +33,7 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.yuma.oemsdk.R
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.resource_reader.FileReader
 import com.yumaoem.core.utils.sound_player.SoundPlayer
 import com.yumaoem.core.utils.vibration.vibrate
@@ -45,7 +46,7 @@ import com.yumaoem.core_ui.theme.dimension.LocalDimensions
 import com.yumaoem.core_ui.theme.typography.LocalTypography
 import com.yumaoem.feature_home.presentation.payments.plan_selection.components.SolidCircle3dp
 import kotlinx.coroutines.delay
-
+@androidx.annotation.RequiresPermission(android.Manifest.permission.VIBRATE)
 @Composable
 fun PaymentSuccessScreenRoot(
     navigateToHomeTab: () -> Unit
@@ -56,17 +57,21 @@ fun PaymentSuccessScreenRoot(
         mutableStateOf(fileReader.readBytes("celebration.mp3"))
     }
 
-    //val audioPlayer: SoundPlayer = getKoin().get()
-//
-//    LaunchedEffect(Unit) {
-//        delay(200)
-//        successSound?.let {
-//            audioPlayer.playSound(it, onComplete = {
-//                audioPlayer.release()
-//            })
-//        }
-//        vibrate(200)
-//    }
+    val audioPlayer: SoundPlayer = YumaSdk.soundPlayer
+
+    LaunchedEffect(Unit) {
+        delay(200)
+        successSound?.let {
+            audioPlayer.playSound(it, onComplete = {
+                audioPlayer.release()
+            },
+                onError = {
+                    audioPlayer.release()
+                },
+                format = "")
+        }
+        vibrate(200)
+    }
 
     PaymentSuccessScreen(
         numberOfSwaps = "1 Swaps",
