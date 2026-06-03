@@ -35,7 +35,7 @@ object Endpoints {
 
     const val START_DIY_SWAP = "yuzen/oem/diy-swap-details"
 
-    const val YUZEN_DEV_BASE_URL = "https://dev3-backend-api.yumax.app/"
+    const val YUZEN_DEV_BASE_URL = "https://preprod-backend-api.yumax.app/"
 
     const val VALIDATE_LOCATION = "token/validate-location"
 

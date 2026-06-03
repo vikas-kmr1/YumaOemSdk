@@ -12,11 +12,11 @@ class MainApplication : Application() {
 
         // Initialize Yuma OEM SDK
         val sdkConfig = YumaSdkConfiguration.Builder()
-            .setClientId(5)
-            .setClientSecret("qwerty")
-            .setAuthCode("Y-PySAKbXK_lTURZOi0jpw")
+            .setClientId(31)
+            .setClientSecret("X9mBp6MsY6W")
+            .setAuthCode("oMOXxlcCwoEjs0MwWeS5xA")
             .setMapApiKey("AIzaSyBTmktjliqw55JQNiCqDrdyJNCZYcqeFVE")
-            .setEnvironment(if (BuildConfig.DEBUG) Environment.DEV else Environment.PROD)
+            .setEnvironment(if (BuildConfig.DEBUG) Environment.PREPROD else Environment.PROD)
             .build()
 
         YumaSdk.init(this, sdkConfig)

@@ -24,7 +24,7 @@ data class BookTokenRequest(
 	@SerialName("distanceFromChargingStation")
 	val distanceFromChargingStation: Int? = null,
 
-	@SerialName("tokenStatusId")
+	@SerialName("orderId")
 	val orderId: Int,
 
 	@SerialName("isDiyToken")
