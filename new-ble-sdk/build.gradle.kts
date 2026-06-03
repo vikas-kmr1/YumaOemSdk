@@ -71,7 +71,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.vikas-kmr1.YumaOemSdk" // Match root repo logic for JitPack
                 artifactId = "new-ble-sdk"
-                version = "1.0.2-beta"
+                version = "1.0.4-beta"
             }
         }
     }
