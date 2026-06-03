@@ -139,7 +139,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.vikas-kmr1"
                 artifactId = "oem_sdk_beta"
-                version = "1.0.5-beta"
+                version = "1.0.6-beta"
             }
         }
     }

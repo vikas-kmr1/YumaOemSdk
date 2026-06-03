@@ -52,7 +52,7 @@ dependencies {
     implementation("com.squareup.retrofit2:adapter-rxjava2:${retrofit}")
     implementation("com.squareup.okhttp3:logging-interceptor:${okhttp3}")
     implementation("com.squareup.okhttp3:okhttp:${okhttp3}")
-    implementation(files("libs/yuma-ble-sdk-v2.8.13.aar"))
+    compileOnly(files("libs/yuma-ble-sdk-v2.8.13.aar"))
 }
 
 android {
@@ -69,9 +69,24 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.github.vikas-kmr1.YumaOemSdk" // Match root repo logic for JitPack
+                groupId = "com.github.vikas-kmr1.YumaOemSdk"
                 artifactId = "new-ble-sdk"
-                version = "1.0.5-beta"
+                version = "1.0.6-beta"
+                
+                pom.withXml {
+                    val dependenciesNode = asNode().appendNode("dependencies")
+                    val dependencyNode = dependenciesNode.appendNode("dependency")
+                    dependencyNode.appendNode("groupId", "com.github.vikas-kmr1.YumaOemSdk")
+                    dependencyNode.appendNode("artifactId", "yuma-ble-sdk")
+                    dependencyNode.appendNode("version", "1.0.6-beta")
+                    dependencyNode.appendNode("scope", "runtime")
+                }
+            }
+            create<MavenPublication>("bleAar") {
+                groupId = "com.github.vikas-kmr1.YumaOemSdk"
+                artifactId = "yuma-ble-sdk"
+                version = "1.0.6-beta"
+                artifact(files("libs/yuma-ble-sdk-v2.8.13.aar"))
             }
         }
     }
