@@ -71,22 +71,22 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.vikas-kmr1.YumaOemSdk"
                 artifactId = "new-ble-sdk"
-                version = "1.0.6-beta"
+                version = "1.0.7-beta"
                 
                 pom.withXml {
                     val dependenciesNode = asNode().appendNode("dependencies")
                     val dependencyNode = dependenciesNode.appendNode("dependency")
                     dependencyNode.appendNode("groupId", "com.github.vikas-kmr1.YumaOemSdk")
                     dependencyNode.appendNode("artifactId", "yuma-ble-sdk")
-                    dependencyNode.appendNode("version", "1.0.6-beta")
+                    dependencyNode.appendNode("version", "1.0.7-beta")
                     dependencyNode.appendNode("scope", "runtime")
                 }
             }
             create<MavenPublication>("bleAar") {
                 groupId = "com.github.vikas-kmr1.YumaOemSdk"
                 artifactId = "yuma-ble-sdk"
-                version = "1.0.6-beta"
-                artifact(files("libs/yuma-ble-sdk-v2.8.13.aar"))
+                version = "1.0.7-beta"
+                artifact(file("libs/yuma-ble-sdk-v2.8.13.aar"))
             }
         }
     }
