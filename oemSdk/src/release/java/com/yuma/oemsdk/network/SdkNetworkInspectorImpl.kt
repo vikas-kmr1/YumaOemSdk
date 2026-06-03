@@ -2,6 +2,7 @@ package com.yuma.oemsdk.network
 
 import android.content.Context
 import io.ktor.client.HttpClientConfig
+import com.yuma.oemsdk.core_network.SdkNetworkInspector
 
 /**
  * Release (No-Op) implementation of the network inspector.
