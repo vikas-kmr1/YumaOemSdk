@@ -13,7 +13,7 @@ kotlin {
 android {
     namespace = "com.yuma.oemsdk"
     compileSdk {
-        version = release(35) {
+        version = release(36) {
             minorApiLevel = 1
         }
     }
@@ -140,7 +140,6 @@ android {
     publishing {
         singleVariant("release") {
             withSourcesJar()
-            withJavadocJar()
         }
     }
 }

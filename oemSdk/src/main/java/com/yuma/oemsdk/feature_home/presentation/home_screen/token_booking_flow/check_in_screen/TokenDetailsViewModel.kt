@@ -124,6 +124,7 @@ class TokenDetailsViewModel(
                             )
                             sendCancelBookingEvent()
                             prefUtilApi.removeBookedTokenDetails()
+                            prefUtilApi.logoutUser()
                             _uiEvent.emit(TokenDetailsScreenUiEvent.OnBookingCancelled)
                         },
                         onError = { errorMessage, _ ->

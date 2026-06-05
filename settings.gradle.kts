@@ -21,7 +21,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
         flatDir {
-            dirs("new-ble-sdk/libs")
+            dirs("oemSdk/libs")
         }
     }
 }

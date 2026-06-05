@@ -104,6 +104,7 @@ internal class HomeViewModel(
             }
 
             HomeScreenEvent.OnSwapSuccessShown -> {
+                yumaPrefUtil.logoutUser()
                 updateHomeScreenDestination(HomeScreenDestination.MapScreenPostSwap)
             }
 
