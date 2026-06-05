@@ -131,7 +131,7 @@ dependencies {
     implementation(libs.cashfree)
 
     // Network inspection (Debug only)
-    debugImplementation(libs.inspektify.ktor3)
+    implementation(libs.inspektify.ktor3)
 
 
 }
