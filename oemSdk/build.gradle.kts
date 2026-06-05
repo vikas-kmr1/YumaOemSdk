@@ -13,7 +13,7 @@ kotlin {
 android {
     namespace = "com.yuma.oemsdk"
     compileSdk {
-        version = release(36) {
+        version = release(35) {
             minorApiLevel = 1
         }
     }
@@ -45,6 +45,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
+val retrofit = "2.9.0"
+val retrofitGsonConvertor = "2.9.0"
+val okhttp3 = "4.9.0"
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -64,6 +68,16 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.icons.extended)
+
+
+    implementation("com.squareup.retrofit2:converter-gson:${retrofitGsonConvertor}")
+    implementation ("com.segment.analytics.kotlin:android:1.16.3")
+    implementation("com.squareup.retrofit2:retrofit:${retrofit}")
+    implementation("com.squareup.retrofit2:converter-gson:${retrofitGsonConvertor}")
+    implementation("com.squareup.retrofit2:adapter-rxjava2:${retrofit}")
+    implementation("com.squareup.okhttp3:logging-interceptor:${okhttp3}")
+    implementation("com.squareup.okhttp3:okhttp:${okhttp3}")
+    compileOnly(files("libs/yuma-ble-sdk-v2.8.13.aar"))
 
     // CameraX for camera preview & lifecycle
     implementation(libs.bundles.camerax)
@@ -114,13 +128,12 @@ dependencies {
     api(libs.permissions.location)
     api(libs.permissions.notifications)
 
-
-    implementation(project(":new-ble-sdk"))
-
     implementation(libs.cashfree)
 
     // Network inspection (Debug only)
     debugImplementation(libs.inspektify.ktor3)
+
+
 }
 
 android {
