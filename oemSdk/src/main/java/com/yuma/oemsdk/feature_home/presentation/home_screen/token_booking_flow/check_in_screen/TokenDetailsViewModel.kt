@@ -23,6 +23,7 @@ import com.yumaoem.core.utils.qr_validator.BatteryQrValidator
 import com.yumaoem.core.utils.qr_validator.QR_Patterns.BATTERY_CODE_SEPARATOR
 import com.yumaoem.core.utils.sound.playBeep
 import com.yumaoem.core.utils.vibration.vibrate
+import com.yumaoem.core_network.api.HttpClientApi
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.core_ui.utils.snackbar.SnackbarController
 import com.yumaoem.core_ui.utils.snackbar.SnackbarEvent
@@ -54,6 +55,7 @@ import kotlinx.coroutines.launch
 
 class TokenDetailsViewModel(
     private val bluetoothController: BluetoothController,
+    private val httpClientApi: HttpClientApi,
     private val observeTokenExpiryCountdownUseCase: ObserveTokenExpiryCountdownUseCase,
     private val getBeaconDetailsUseCase: GetBeaconDetailsUseCase,
     private val checkInUserUseCase: CheckInUserUseCase,
@@ -125,6 +127,7 @@ class TokenDetailsViewModel(
                             sendCancelBookingEvent()
                             prefUtilApi.removeBookedTokenDetails()
                             prefUtilApi.logoutUser()
+                            httpClientApi.resetKtorClients()
                             _uiEvent.emit(TokenDetailsScreenUiEvent.OnBookingCancelled)
                         },
                         onError = { errorMessage, _ ->
@@ -691,6 +694,7 @@ class TokenDetailsViewModel(
 
     class Factory(
         private val bluetoothController: BluetoothController,
+        private val httpClientApi: HttpClientApi,
         private val observeTokenExpiryCountdownUseCase: ObserveTokenExpiryCountdownUseCase,
         private val getBeaconDetailsUseCase: GetBeaconDetailsUseCase,
         private val checkInUserUseCase: CheckInUserUseCase,
@@ -709,6 +713,7 @@ class TokenDetailsViewModel(
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
             TokenDetailsViewModel(
                 bluetoothController = bluetoothController,
+                httpClientApi = httpClientApi,
                 observeTokenExpiryCountdownUseCase = observeTokenExpiryCountdownUseCase,
                 getBeaconDetailsUseCase = getBeaconDetailsUseCase,
                 checkInUserUseCase = checkInUserUseCase,

@@ -17,4 +17,13 @@ internal class SdkNetworkInspectorImpl : SdkNetworkInspector {
     override fun install(config: HttpClientConfig<*>) {
         // No-Op
     }
+
+
+    companion object {
+        /**
+         * Returns the build-type specific inspector instance.
+         * The Actual implementation is found in src/debug and src/release.
+         */
+        fun create(): SdkNetworkInspector = SdkNetworkInspectorImpl()
+    }
 }
