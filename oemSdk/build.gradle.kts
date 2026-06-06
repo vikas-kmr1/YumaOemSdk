@@ -77,7 +77,7 @@ dependencies {
     implementation("com.squareup.retrofit2:adapter-rxjava2:${retrofit}")
     implementation("com.squareup.okhttp3:logging-interceptor:${okhttp3}")
     implementation("com.squareup.okhttp3:okhttp:${okhttp3}")
-    compileOnly(files("libs/yuma-ble-sdk-v2.8.13.aar"))
+    implementation(files("libs/yuma-ble-sdk-v2.8.13.aar"))
 
     // CameraX for camera preview & lifecycle
     implementation(libs.bundles.camerax)
