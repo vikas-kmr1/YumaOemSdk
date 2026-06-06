@@ -130,7 +130,7 @@ dependencies {
 
     implementation(libs.cashfree)
 
-    // Network inspection (Debug only)
+    // Network inspection (Available everywhere now so we can control it via SDK)
     implementation(libs.inspektify.ktor3)
 
 
@@ -139,6 +139,9 @@ dependencies {
 android {
     publishing {
         singleVariant("release") {
+            withSourcesJar()
+        }
+        singleVariant("debug") {
             withSourcesJar()
         }
     }
@@ -151,7 +154,13 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.vikas-kmr1"
                 artifactId = "oem_sdk_beta"
-                version = "1.0.9-beta"
+                version = "1.0.11-beta"
+            }
+            create<MavenPublication>("debug") {
+                from(components["debug"])
+                groupId = "com.github.vikas-kmr1"
+                artifactId = "oem_sdk_beta-debug"
+                version = "1.0.11-beta"
             }
         }
     }
