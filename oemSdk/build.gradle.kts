@@ -141,9 +141,6 @@ android {
         singleVariant("release") {
             withSourcesJar()
         }
-        singleVariant("debug") {
-            withSourcesJar()
-        }
     }
 }
 
@@ -154,13 +151,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.vikas-kmr1"
                 artifactId = "oem_sdk_beta"
-                version = "1.0.11-beta"
-            }
-            create<MavenPublication>("debug") {
-                from(components["debug"])
-                groupId = "com.github.vikas-kmr1"
-                artifactId = "oem_sdk_beta-debug"
-                version = "1.0.11-beta"
+                version = "1.0.12-beta"
             }
         }
     }
