@@ -42,10 +42,11 @@ The entire SDK is encapsulated to ensure stability. No underlying components or 
 Because the Custom UI option has been stripped out, the client's integration logic becomes completely foolproof and linear.
 
 ### **The Initialization Logic**
-During initialization, they pass three core elements:
+During initialization, they pass four core elements:
 1. `ClientId`: Identifies the client to your backend.
-2. `ClientKey`: Secures the JWT token generation internally.
-3. `MapKey`: Used intrinsically by the maps framework deep inside your UI view trees.
+2. `ClientSecret`: Secures the JWT token generation internally.
+3. `AuthCode`: Secure authorization code for silent authentication.
+4. `MapKey`: Used intrinsically by the maps framework deep inside your UI view trees.
 
 ```text
 CLIENT APP (Host)                           YUMA-SDK (Drop-in UI)                     YUMA BACKEND
@@ -53,13 +54,13 @@ CLIENT APP (Host)                           YUMA-SDK (Drop-in UI)               
     │                                                  │                                  │
     │  PHASE 1: Initialization Flow                    │                                  │
     ├─── 1. YumaSdk.init(...)  ───────────────────────>│                                  │
-    │      • ClientKey                                 ├─── 2. Authenticate ClientKey ───>│
+    │      • ClientId, ClientSecret, AuthCode          ├─── 2. Authenticate keys ────────>│
     │      • MapKey (Stored for later)                 │                                  │
     │                                                  │<── 3. Return Session Token  ─────┤
     │                                                  │                                  │
     │                                                  │                                  │
     │  PHASE 2: Interface Launch Flow                  │                                  │
-    ├─── 4. launchHome() ─────────────────────────────>│ ┐                                │
+    ├─── 4. launchSdk() ──────────────────────────────>│ ┐                                │
     │                                                  │ │ (SDK handles all the           │
     │<── 5. SDK Activity takes over screen drawing ────┤ │  mapping, fetching stations,   │
     │       pre-built Jetpack UI screens               │ ┘  and rendering internally)     │

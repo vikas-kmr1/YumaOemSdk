@@ -16,10 +16,11 @@ The entire SDK (Networking, Authentication, Databases, Jetpack Compose UI, and M
 Because the Custom UI / Headless option has been stripped out, integrating the SDK is completely linear and extremely simple for end-user developers.
 
 ### **The Initialization Logic**
-During the host application's startup, the client must pass **three** required keys to configuration:
+During the host application's startup, the client must pass **four** required keys to configuration:
 1. `ClientId`: Identifies the client partner.
-2. `ClientKey`: Secure key exchanged for the JWT Session Token.
-3. `MapKey`: Exposes the Google Maps API key (to be consumed internally by your Maps Compose UI).
+2. `ClientSecret`: Secure key exchanged for the JWT Session Token.
+3. `AuthCode`: Secure authorization code for silent authentication.
+4. `MapKey`: Exposes the Google Maps API key (to be consumed internally by your Maps Compose UI).
 
 <img src="./user_flow.png" width="5092" alt="">
 
@@ -31,15 +32,17 @@ What the client developer will actually write to start your SDK:
 // Inside Client's Application Class
 YumaSdk.init(
     context = this,
-    config = SdkConfiguration.Builder()
-        .setClientKey("SEC_KEY_XYZ")
-        .setMapKey("MAP_API_") // New required parameter
+    sdkConfig = YumaSdkConfiguration.Builder()
+        .setClientId(12345)
+        .setClientSecret("YOUR_CLIENT_SECRET")
+        .setAuthCode("YOUR_AUTH_CODE")
+        .setMapApiKey("YOUR_GOOGLE_MAPS_API_KEY")
         .setEnvironment(Environment.PROD)
         .build()
 )
 
 // Later on a button press inside their app
 binding.btnOpenMap.setOnClickListener {
-    YumaSdk.launchHome(this)
+    YumaSdk.launchSdk(this)
 }
 ```
