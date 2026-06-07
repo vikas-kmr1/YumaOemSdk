@@ -15,7 +15,7 @@ This guide explains how to integrate the Yuma OEM SDK and its associated BLE SDK
 2. Navigate to your app module (usually named `app`).
 3. If a `libs` directory does not exist inside `app`, right-click on `app` -> **New** -> **Directory** and name it `libs`.
 4. Copy the provided `.aar` file into the `app/libs` directory:
-   - `yuma-ble-sdk-v2.8.13.aar`
+   - `yuma-ble-sdk-<LATEST_VERSION>.aar`
 
 *(Note: You do not need to add the `oemSdk-release.aar` locally as it will be fetched from JitPack.)*
 
@@ -33,7 +33,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        mavenLocal()
         maven { url = uri("https://jitpack.io") } // Add JitPack repository
     }
 }
@@ -67,14 +66,14 @@ Add the SDK dependencies and the desugaring library inside the `dependencies { .
 
 ```kotlin
 dependencies {
-    // Enable Java 8+ API desugaring support
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    // Enable Java 8+ API desugaring support, version 2.1.0 or higher required
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:<LATEST_VERSION>")
 
-    // Core OEM SDK from JitPack (Replace version with the latest release if necessary)
-    implementation("com.github.vikas-kmr1:oem_sdk_beta:1.0.10-beta")
+    // Core OEM SDK from JitPack (Replace version with the latest release)
+    implementation("com.github.vikas-kmr1:oem_sdk_beta:<LATEST_VERSION>")
 
     // The local BLE SDK dependency
-    implementation(files("libs/yuma-ble-sdk-v2.8.13.aar"))
+    implementation(files("libs/yuma-ble-sdk-<LATEST_VERSION>.aar"))
 }
 ```
 *(By using JitPack, all required transitive dependencies like Jetpack Compose, Google Maps, and Ktor are resolved automatically. You don't need to manually add them!)*
@@ -96,8 +95,6 @@ Before you can launch the SDK, you must initialize it. The best place to do this
 Create a Custom Application Class (if you don't have one) and initialize `YumaSdk`:
 
 ```kotlin
-package com.yourcompany.app
-
 import android.app.Application
 import com.yuma.oemsdk.Environment
 import com.yuma.oemsdk.YumaSdk
