@@ -45,6 +45,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
+val retrofit = "2.9.0"
+val retrofitGsonConvertor = "2.9.0"
+val okhttp3 = "4.9.0"
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -64,6 +68,16 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.icons.extended)
+
+
+    implementation("com.squareup.retrofit2:converter-gson:${retrofitGsonConvertor}")
+    implementation ("com.segment.analytics.kotlin:android:1.16.3")
+    implementation("com.squareup.retrofit2:retrofit:${retrofit}")
+    implementation("com.squareup.retrofit2:converter-gson:${retrofitGsonConvertor}")
+    implementation("com.squareup.retrofit2:adapter-rxjava2:${retrofit}")
+    implementation("com.squareup.okhttp3:logging-interceptor:${okhttp3}")
+    implementation("com.squareup.okhttp3:okhttp:${okhttp3}")
+    compileOnly(files("libs/yuma-ble-sdk-v2.8.13.aar"))
 
     // CameraX for camera preview & lifecycle
     implementation(libs.bundles.camerax)
@@ -114,20 +128,18 @@ dependencies {
     api(libs.permissions.location)
     api(libs.permissions.notifications)
 
-
-    implementation(project(":new-ble-sdk"))
-
     implementation(libs.cashfree)
 
-    // Network inspection (Debug only)
-    debugImplementation(libs.inspektify.ktor3)
+    // Network inspection (Available everywhere now so we can control it via SDK)
+    implementation(libs.inspektify.ktor3)
+
+
 }
 
 android {
     publishing {
         singleVariant("release") {
             withSourcesJar()
-            withJavadocJar()
         }
     }
 }
@@ -139,7 +151,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.vikas-kmr1"
                 artifactId = "oem_sdk_beta"
-                version = "1.0.2-beta"
+                version = "1.0.12-beta"
             }
         }
     }

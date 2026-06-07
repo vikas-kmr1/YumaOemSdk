@@ -20,6 +20,7 @@ import com.yumaoem.core.utils.data.AndroidBluetoothController
 import com.yumaoem.core.utils.device_info.DeviceInfoProvider
 import com.yumaoem.core.utils.network_connection.NetworkStatusProvider
 import com.yumaoem.core.utils.sound_player.SoundPlayer
+import com.yumaoem.core_network.api.HttpClientApi
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.corepreference.createDataStore
 import com.yumaoem.corepreference.impl.PreferenceApiImpl
@@ -92,7 +93,8 @@ enum class Environment {
 /**
  * Configuration for initializing the Yuma OEM SDK.
  *
- * @property clientKey  The unique client key issued by Yuma — used for silent authentication.
+ * @property clientSecret  The unique client secret key issued by Yuma — used for silent authentication.
+ * @property clientId  The unique clientId issued by Yuma — used for silent authentication.
  * @property mapApiKey  The Google Maps API key used internally by the SDK's map screens.
  * @property environment The target backend environment. Defaults to [Environment.PROD].
  */
@@ -119,6 +121,7 @@ class YumaSdkConfiguration(
 
         fun build(): YumaSdkConfiguration {
             require(clientSecret.isNotBlank()) { "Client Key must not be blank" }
+            require(clientId != 0) { "Client Id must not be blank" }
             require(authCode.isNotBlank()) { "auth-code must not be blank" }
             require(mapApiKey.isNotBlank()) { "Map API Key must not be blank" }
             return YumaSdkConfiguration(
@@ -197,6 +200,7 @@ object YumaSdk {
             andoridPaymentContextProvider = AndroidPaymentContextProvider()
             coreLocationProvider = CoreLocationProvider(applicationContext)
             networkStatusProvider = NetworkStatusProvider()
+
             val cashfreeGateway: PaymentGateway = AndroidPaymentGateway(applicationContext)
             val loggerApi = LoggerApiImpl(enableLogging)
             val networkClient =
@@ -241,6 +245,7 @@ object YumaSdk {
 
             homeViewModelFactory = buildHomeViewModelFactory(
                 locationProvider,
+                networkClient,
                 whatsappSupprtDetailsUseCase,
                 prefManager,
                 homeRepository,
@@ -292,6 +297,7 @@ object YumaSdk {
 
             tokenDetailsViewModelFactory = TokenDetailsViewModel.Factory(
                 getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                httpClientApi = networkClient,
                 bluetoothController = AndroidBluetoothController(applicationContext),
                 loggerApi = loggerApi,
                 commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
@@ -401,6 +407,7 @@ object YumaSdk {
 
     private fun buildHomeViewModelFactory(
         locationProvider: LocationProvider,
+        httpClientApi: HttpClientApi,
         supportDetailsUseCase: GetWhatsappSupprtDetailsUseCase,
         prefManager: YumaPrefUtilApi,
         homeRepository: HomeRepositoryImpl,
@@ -409,6 +416,7 @@ object YumaSdk {
     ): HomeViewModel.Factory {
         return HomeViewModel.Factory(
             locationProvider = locationProvider,
+            httpClientApi = httpClientApi,
             yumaPrefUtil = prefManager,
             supportDetailsUseCase = supportDetailsUseCase,
             navigationStateRepository = navigationStateRepository,

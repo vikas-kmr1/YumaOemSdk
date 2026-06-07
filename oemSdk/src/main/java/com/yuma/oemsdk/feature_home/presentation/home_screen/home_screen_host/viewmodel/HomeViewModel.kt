@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.yumaoem.core.app_navigation_state.HomeScreenDestination
 import com.yumaoem.core.app_navigation_state.NavigationStateRepository
 import com.yumaoem.core.utils.orZero
+import com.yumaoem.core_network.api.HttpClientApi
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.feature_home.common.notification.ServiceLauncher
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 
 internal class HomeViewModel(
     private val yumaPrefUtil: YumaPrefUtilApi,
+    private val httpClientApi: HttpClientApi,
     private val serviceLauncher: ServiceLauncher,
     private val supportDetailsUseCase: GetWhatsappSupprtDetailsUseCase,
     private val navigationStateRepository: NavigationStateRepository,
@@ -104,6 +106,8 @@ internal class HomeViewModel(
             }
 
             HomeScreenEvent.OnSwapSuccessShown -> {
+                yumaPrefUtil.logoutUser()
+                httpClientApi.resetKtorClients()
                 updateHomeScreenDestination(HomeScreenDestination.MapScreenPostSwap)
             }
 
@@ -150,6 +154,7 @@ internal class HomeViewModel(
     class Factory(
         private val yumaPrefUtil: YumaPrefUtilApi,
         private val serviceLauncher: ServiceLauncher,
+        private val httpClientApi: HttpClientApi,
         private val supportDetailsUseCase: GetWhatsappSupprtDetailsUseCase,
         private val navigationStateRepository: NavigationStateRepository,
         private val locationProvider: LocationProvider
@@ -161,7 +166,8 @@ internal class HomeViewModel(
                 serviceLauncher = serviceLauncher,
                 supportDetailsUseCase = supportDetailsUseCase,
                 navigationStateRepository = navigationStateRepository,
-                locationProvider = locationProvider
+                locationProvider = locationProvider,
+                httpClientApi = httpClientApi
             ) as T
     }
 }
