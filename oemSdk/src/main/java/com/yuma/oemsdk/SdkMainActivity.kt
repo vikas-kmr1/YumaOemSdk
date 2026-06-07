@@ -48,6 +48,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import com.yuma.oemsdk.navigation.SdkNavHost
+import com.yuma.oemsdk.onboarding.SplashScreenRoot
 import com.yumaoem.core.utils.app_utils.isLocationEnabled
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.global_events.EnableBluetoothEvent
@@ -127,7 +128,6 @@ internal class SdkMainActivity : ComponentActivity(), CFCheckoutResponseCallback
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
-
 
         setContent {
 
@@ -257,42 +257,53 @@ internal class SdkMainActivity : ComponentActivity(), CFCheckoutResponseCallback
 
 @Composable
 private fun App(finish: () -> Unit) {
+    val isPermissionsGranted = remember { mutableStateOf(false) }
     YumaAppTheme {
         Column(
             Modifier
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            HandlePermissions()
+            HandlePermissions(
+                onPermissionsGranted = { isPermissionsGranted.value = true }
+            )
             ObserveNetworkStatus()
-            startLocationRequests()
+            if (isPermissionsGranted.value) {
+                StartLocationRequests()
+            }
             val snackbarHostState = remember {
                 SnackbarHostState()
             }
 
             ObserveSnackBarEvents(snackbarHostState)
-            Scaffold(
-                containerColor = Color.White,
-                snackbarHost = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.TopCenter
-                    ) {
-                        SnackbarHost(
-                            hostState = snackbarHostState,
-                            snackbar = { data ->
-                                ErrorSnackBar(data)
-                            }
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxSize(),
-            ) { inertPadding ->
-                SdkNavHost(
-                    modifier = Modifier.padding(inertPadding),
-                    onExit = { finish() }
-                )
+            if (isPermissionsGranted.value) {
+                Scaffold(
+                    containerColor = Color.White,
+                    snackbarHost = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            SnackbarHost(
+                                hostState = snackbarHostState,
+                                snackbar = { data ->
+                                    ErrorSnackBar(data)
+                                }
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) { inertPadding ->
+                    SdkNavHost(
+                        modifier = Modifier.padding(inertPadding),
+                        onExit = { finish() }
+                    )
+                }
+            } else {
+                Box(modifier = Modifier.fillMaxSize()){
+                    SplashScreenRoot()
+                }
             }
         }
         GetLifecycleEvents(
@@ -315,6 +326,7 @@ private fun HandlePermissions(
         Permission.BLUETOOTH_ADVERTISE,
         Permission.REMOTE_NOTIFICATION
     ),
+    onPermissionsGranted: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -335,15 +347,13 @@ private fun HandlePermissions(
             permissionViewModel.checkAndRequestAllPermissions(requiredPermissions) { permissionState ->
                 when (permissionState) {
                     RequestedPermissionState.Granted -> {
+                        showPermissionDialog.value = false
                         if (isLocationEnabled().not()) {
                             coroutineScope.launch {
                                 EventController.sendEvent(
                                     ShowEnableLocationDialog(
                                     onLocationEnabled = {
-                                        /*     checkIfUserLoggedIn(
-                                                 locationProvider,
-                                                 viewModel
-                                             )*/
+                                        onPermissionsGranted()
                                     },
                                     onLocationDenied = {
                                         coroutineScope.launch {
@@ -357,10 +367,7 @@ private fun HandlePermissions(
                                 ))
                             }
                         } else {
-                            /* checkIfUserLoggedIn(
-                                 locationProvider,
-                                 viewModel
-                             )*/
+                            onPermissionsGranted()
                         }
                     }
 
@@ -412,7 +419,7 @@ private fun ObserveSnackBarEvents(
 }
 
 @Composable
-private fun startLocationRequests() {
+private fun StartLocationRequests() {
     val coroutineScope = rememberCoroutineScope()
     val locationProvider: CoreLocationProvider = YumaSdk.coreLocationProvider
     LaunchedEffect(Unit) {

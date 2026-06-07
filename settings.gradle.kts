@@ -21,7 +21,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
         flatDir {
-            dirs("new-ble-sdk/libs")
+            dirs("oemSdk/libs")
         }
     }
 }
@@ -29,4 +29,4 @@ dependencyResolutionManagement {
 rootProject.name = "YumaOemSdk"
 include(":app")
 include(":oemSdk")
-include(":new-ble-sdk")
+

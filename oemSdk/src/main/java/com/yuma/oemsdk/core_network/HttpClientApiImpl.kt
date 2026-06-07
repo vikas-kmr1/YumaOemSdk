@@ -62,7 +62,6 @@ class HttpClientApiImpl(
     environment: Environment
 ) : HttpClientApi {
     private val TAG = HttpClientApiImpl::class.java.simpleName
-
     /**
      * The base URL for network requests, determined by the provided [environment].
      */
@@ -172,7 +171,7 @@ class HttpClientApiImpl(
 
             // ── Network Inspection (Safety Abstracted) ──────────────────────────
             if (shouldEnableLogging)
-                SdkNetworkInspector.create().install(this)
+                SdkNetworkInspector.create().install(this,)
         }
     }
 

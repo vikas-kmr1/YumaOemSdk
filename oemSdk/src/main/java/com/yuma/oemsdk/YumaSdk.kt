@@ -20,6 +20,7 @@ import com.yumaoem.core.utils.data.AndroidBluetoothController
 import com.yumaoem.core.utils.device_info.DeviceInfoProvider
 import com.yumaoem.core.utils.network_connection.NetworkStatusProvider
 import com.yumaoem.core.utils.sound_player.SoundPlayer
+import com.yumaoem.core_network.api.HttpClientApi
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.corepreference.createDataStore
 import com.yumaoem.corepreference.impl.PreferenceApiImpl
@@ -241,6 +242,7 @@ object YumaSdk {
 
             homeViewModelFactory = buildHomeViewModelFactory(
                 locationProvider,
+                networkClient,
                 whatsappSupprtDetailsUseCase,
                 prefManager,
                 homeRepository,
@@ -292,6 +294,7 @@ object YumaSdk {
 
             tokenDetailsViewModelFactory = TokenDetailsViewModel.Factory(
                 getBatteryDetailsUseCase = getBatteryDetailsUseCase,
+                httpClientApi = networkClient,
                 bluetoothController = AndroidBluetoothController(applicationContext),
                 loggerApi = loggerApi,
                 commonAnalyticsParamsProvider = commonAnalyticsParamsProvider,
@@ -401,6 +404,7 @@ object YumaSdk {
 
     private fun buildHomeViewModelFactory(
         locationProvider: LocationProvider,
+        httpClientApi: HttpClientApi,
         supportDetailsUseCase: GetWhatsappSupprtDetailsUseCase,
         prefManager: YumaPrefUtilApi,
         homeRepository: HomeRepositoryImpl,
@@ -409,6 +413,7 @@ object YumaSdk {
     ): HomeViewModel.Factory {
         return HomeViewModel.Factory(
             locationProvider = locationProvider,
+            httpClientApi = httpClientApi,
             yumaPrefUtil = prefManager,
             supportDetailsUseCase = supportDetailsUseCase,
             navigationStateRepository = navigationStateRepository,
