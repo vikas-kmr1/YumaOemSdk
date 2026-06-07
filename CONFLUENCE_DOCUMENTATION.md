@@ -67,6 +67,8 @@ The partner passes their unique credentials to the SDK when their app starts up.
 val sdkConfig = YumaSdkConfiguration.Builder()
     .setClientId(12345)
     .setClientSecret("SECRET")
+    .setAuthCode("AUTH_CODE")
+    .setMapApiKey("MAP_API_KEY")
     .setEnvironment(Environment.PROD)
     // ...
     .build()
