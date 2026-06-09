@@ -15,8 +15,8 @@ android {
         applicationId = "com.yuma.yumaoemsdk"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.0.13-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["YUMA_MAP_API_KEY"] = "AIzaSyDgUJfdi2Ba9bh5FrzTIofMDCIFDcK02kM"
