@@ -80,6 +80,7 @@ class ProfileViewModel(
     fun onLogout() {
         viewModelScope.launch {
             sendUserLogoutEvent()
+            prefUtilApi.logoutUser()
             val userId: String? = prefUtilApi.getUserData()?.userId
             val refreshToken: String = prefUtilApi.getBearerTokens()?.refreshToken.orEmpty()
         }
