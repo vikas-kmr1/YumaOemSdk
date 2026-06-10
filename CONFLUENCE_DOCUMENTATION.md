@@ -94,4 +94,6 @@ The SDK supports multiple backend environments to allow partners to test safely 
 
 ---
 
-> **💡 Note for Developers:** For detailed, step-by-step code integration instructions, please refer to the `CLIENT_INTEGRATION_README.md` included in the SDK repository.
+> **💡 Note for Developers:**  
+> - For detailed, step-by-step code integration instructions, see the [Client Integration Guide](file:///Users/vikakum4/AndroidStudioProjects/YumaOemSdk/README.md).  
+> - For instructions on how to publish the SDK, see the [Maven Publishing Guide](file:///Users/vikakum4/AndroidStudioProjects/YumaOemSdk/MAVEN_PUBLISHING_GUIDE.md).
