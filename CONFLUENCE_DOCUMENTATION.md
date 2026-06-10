@@ -46,6 +46,7 @@ The SDK is built using a state-of-the-art modern Android stack. It is modular, r
 
 ### **Module Breakdown**
 The SDK is divided into focused, clean modules:
+
 1. `core_network`: Manages all API calls to the Yuma backend.
 2. `core_preference`: Handles secure local storage.
 3. `new_ble_sdk` & `sdk_core`: The brains behind the IoT hardware communication.
