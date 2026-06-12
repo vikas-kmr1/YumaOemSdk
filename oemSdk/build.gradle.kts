@@ -149,7 +149,7 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.github.vikas-kmr1"
+                groupId = "com.github.yuma-energy:"
                 artifactId = "oem_sdk_beta"
                 version = "1.0.15-beta"
             }

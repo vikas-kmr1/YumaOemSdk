@@ -46,6 +46,7 @@ The SDK is built using a state-of-the-art modern Android stack. It is modular, r
 
 ### **Module Breakdown**
 The SDK is divided into focused, clean modules:
+
 1. `core_network`: Manages all API calls to the Yuma backend.
 2. `core_preference`: Handles secure local storage.
 3. `new_ble_sdk` & `sdk_core`: The brains behind the IoT hardware communication.
@@ -93,4 +94,6 @@ The SDK supports multiple backend environments to allow partners to test safely 
 
 ---
 
-> **💡 Note for Developers:** For detailed, step-by-step code integration instructions, please refer to the `CLIENT_INTEGRATION_README.md` included in the SDK repository.
+> **💡 Note for Developers:**  
+> - For detailed, step-by-step code integration instructions, see the [Client Integration Guide](file:///Users/vikakum4/AndroidStudioProjects/YumaOemSdk/README.md).  
+> - For instructions on how to publish the SDK, see the [Maven Publishing Guide](file:///Users/vikakum4/AndroidStudioProjects/YumaOemSdk/MAVEN_PUBLISHING_GUIDE.md).
