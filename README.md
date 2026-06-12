@@ -70,7 +70,7 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:<LATEST_VERSION>")
 
     // Core OEM SDK from JitPack (Replace version with the latest release)
-    implementation("com.github.vikas-kmr1:oem_sdk_beta:<LATEST_VERSION>")
+    implementation("com.github.yuma-energy:YumaOemSdk:<LATEST_VERSION>")
 
     // The local BLE SDK dependency
     implementation(files("libs/yuma-ble-sdk-<LATEST_VERSION>.aar"))
