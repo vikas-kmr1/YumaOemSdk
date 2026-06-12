@@ -151,7 +151,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.yuma-energy:"
                 artifactId = "oem_sdk_beta"
-                version = "1.0.15-beta"
+                version = "1.0.16-beta"
             }
         }
     }

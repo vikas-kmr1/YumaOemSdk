@@ -146,7 +146,3 @@ YumaSdk.launchSdk(context)
 > `launchSdk()` will automatically open the SDK's main activity. It handles requesting all necessary permissions (Location, Bluetooth, Notifications), performs silent authentication in the background, and smoothly navigates the user to the Home/Map screen.
 
 ---
-
-## 🛠️ SDK Publishing & Maintenance
-
-If you are a developer looking to publish updates to the Yuma OEM SDK rather than integrate it, please refer to the [Maven Publishing Guide](file:///Users/vikakum4/AndroidStudioProjects/YumaOemSdk/MAVEN_PUBLISHING_GUIDE.md) for details on publishing locally, to JitPack, or to custom remote Maven repositories.
