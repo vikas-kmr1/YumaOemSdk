@@ -1,23 +1,3 @@
-
-import java.util.Properties
-
-//fun readProperties(propertiesFile: File) = Properties().apply {
-//    propertiesFile.inputStream().use { fis ->
-//        load(fis)
-//    }
-//}
-//
-//fun getAuthCode(): String {
-//    if (File(rootProject.projectDir,"local.properties").canRead()) {
-//        val localProperties = readProperties(File(rootProject.projectDir,"local.properties"))
-//        val authCode: String =  localProperties.getProperty("jitpack-authToken")
-//
-//        return "\"$authCode\""
-//    }
-//    return ""
-//}
-
-
 pluginManagement {
     repositories {
         google {
@@ -41,9 +21,6 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             url = uri("https://jitpack.io")
-//            credentials {
-//                username = getAuthCode()
-//            }
         }
         flatDir {
             dirs("oemSdk/libs")
