@@ -67,3 +67,29 @@ CLIENT APP (Host)                           YUMA-SDK (Drop-in UI)               
     │                                                  │                                  │
     │                                                  │                                  │
 ```
+
+### Mermaid Visualization
+
+```mermaid
+---
+config:
+  theme: redux-color
+  background: '#ffffff'
+---
+sequenceDiagram
+    autonumber
+    participant Client as CLIENT APP (Host)
+    participant SDK as YUMA-SDK (Drop-in UI)
+    participant Backend as YUMA BACKEND
+
+    Note over Client,Backend: PHASE 1: Initialization Flow
+    Client->>SDK: 1. YumaSdk.init(...)
+    Note right of Client: Passes ClientId, ClientSecret,<br/>AuthCode, and MapKey
+    SDK->>Backend: 2. Authenticate keys
+    Backend-->>SDK: 3. Return Session Token
+
+    Note over Client,Backend: PHASE 2: Interface Launch Flow
+    Client->>SDK: 4. launchSdk()
+    SDK-->>Client: 5. SDK Activity takes over screen drawing
+    Note right of SDK: SDK handles all mapping,<br/>fetching stations,<br/>and rendering internally
+```
