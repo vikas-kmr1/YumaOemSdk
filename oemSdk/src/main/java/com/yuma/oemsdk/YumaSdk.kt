@@ -377,6 +377,10 @@ object YumaSdk {
     /** Returns the application context held by the SDK. */
     fun getApplicationContext(): Context = applicationContext
 
+    internal fun onDestroy() {
+        soundPlayer.release()
+        isInitialized = false
+    }
     /**
      * Returns the current SDK configuration.
      * @throws IllegalStateException if [init] has not been called.

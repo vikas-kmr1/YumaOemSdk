@@ -49,6 +49,7 @@ import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import com.yuma.oemsdk.navigation.SdkNavHost
 import com.yuma.oemsdk.onboarding.SplashScreenRoot
+import com.yumaoem.core.utils.app_utils.hideKeyboard
 import com.yumaoem.core.utils.app_utils.isLocationEnabled
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
 import com.yumaoem.core.utils.global_events.EnableBluetoothEvent
@@ -236,6 +237,7 @@ internal class SdkMainActivity : ComponentActivity(), CFCheckoutResponseCallback
 
     override fun onDestroy() {
         super.onDestroy()
+        YumaSdk.onDestroy()
         YumaSdk.andoridPaymentContextProvider.clearCurrentActivity()
     }
 
