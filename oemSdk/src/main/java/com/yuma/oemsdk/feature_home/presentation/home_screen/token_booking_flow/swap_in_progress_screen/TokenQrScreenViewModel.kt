@@ -190,8 +190,8 @@ class TokenQrScreenViewModel(
                     sendCancelBookingEvent(isSuccess = true)
                     pollingJob?.cancel()
                     prefUtilApi.removeBookedTokenDetails()
-                    _uiEvent.emit(TokenQRScreenUiEvent.OnBookingCancelled)
                     prefUtilApi.logoutUser()
+                    _uiEvent.emit(TokenQRScreenUiEvent.OnBookingCancelled)
                 }
             )
         }

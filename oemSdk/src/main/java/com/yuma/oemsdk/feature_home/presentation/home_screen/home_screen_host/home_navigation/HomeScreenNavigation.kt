@@ -50,7 +50,8 @@ var currentHomeScreen: String? = null
 @Composable
 fun HomeScreenRoot(
     isHomeTab: Boolean,
-    navigateToPaymentsTab: () -> Unit
+    navigateToPaymentsTab: () -> Unit,
+    onBookingCacelled: () -> Unit,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = YumaSdk.homeViewModelFactory)
     val navController = rememberNavController()
@@ -119,7 +120,8 @@ fun HomeScreenRoot(
         navigateAsPerState(
             viewModel = viewModel,
             onPurchasePlanClicked = navigateToPaymentsTab,
-            isHomeTab = isHomeTab
+            isHomeTab = isHomeTab,
+            onBookingCancelled = onBookingCacelled
         )
     }
 }
@@ -127,7 +129,8 @@ fun HomeScreenRoot(
 private fun NavGraphBuilder.navigateAsPerState(
     isHomeTab:Boolean,
     viewModel: HomeViewModel,
-    onPurchasePlanClicked:() -> Unit
+    onPurchasePlanClicked:() -> Unit,
+    onBookingCancelled: () -> Unit,
 ) {
 
     composable<MapScreen> { backStackEntry ->
@@ -150,6 +153,7 @@ private fun NavGraphBuilder.navigateAsPerState(
             isHomeTab = isHomeTab,
             onBookingCancelled = {
                 viewModel.onEvent(event = HomeScreenEvent.OnBookingCancelled)
+                onBookingCancelled()
             },
             onCheckedInAtStation = {
                 viewModel.onEvent(event = HomeScreenEvent.OnCheckedInAtStation)
@@ -165,6 +169,7 @@ private fun NavGraphBuilder.navigateAsPerState(
             isHomeTab = isHomeTab,
             onBookingCancelled = {
                 viewModel.onEvent(event = HomeScreenEvent.OnBookingCancelled)
+                onBookingCancelled()
             },
             onSwapCompleted = {
                 viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = it))

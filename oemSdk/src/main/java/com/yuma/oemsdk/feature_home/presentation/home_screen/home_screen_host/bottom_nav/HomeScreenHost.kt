@@ -47,7 +47,6 @@ fun HomeScreenHost(
     onUserLoggedOut: () -> Unit,
     exitSdk: () -> Unit
 ) {
-    val yumaPrefUtilApi = YumaSdk.prefManager
 
     var hideBottomBar by remember { mutableStateOf(false) }
     var isB2CCustomer by remember { mutableStateOf(false) }
@@ -172,7 +171,8 @@ private fun HomeScreenContentContainer(
         ) {
             HomeScreenRoot(
                 navigateToPaymentsTab = onNavigateToPayments,
-                isHomeTab = (selectedRoute == NavRoute.HOME)
+                isHomeTab = (selectedRoute == NavRoute.HOME),
+                onBookingCacelled = onUserLoggedOut
             )
         }
 
