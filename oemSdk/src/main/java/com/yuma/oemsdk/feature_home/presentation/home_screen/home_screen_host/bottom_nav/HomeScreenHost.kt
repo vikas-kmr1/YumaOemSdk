@@ -172,7 +172,7 @@ private fun HomeScreenContentContainer(
             HomeScreenRoot(
                 navigateToPaymentsTab = onNavigateToPayments,
                 isHomeTab = (selectedRoute == NavRoute.HOME),
-                onBookingCacelled = onUserLoggedOut
+                onBookingCancelled = onUserLoggedOut
             )
         }
 

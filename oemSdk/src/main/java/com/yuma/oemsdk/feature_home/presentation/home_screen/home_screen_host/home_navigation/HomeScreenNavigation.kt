@@ -51,7 +51,7 @@ var currentHomeScreen: String? = null
 fun HomeScreenRoot(
     isHomeTab: Boolean,
     navigateToPaymentsTab: () -> Unit,
-    onBookingCacelled: () -> Unit,
+    onBookingCancelled: () -> Unit,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = YumaSdk.homeViewModelFactory)
     val navController = rememberNavController()
@@ -121,7 +121,7 @@ fun HomeScreenRoot(
             viewModel = viewModel,
             onPurchasePlanClicked = navigateToPaymentsTab,
             isHomeTab = isHomeTab,
-            onBookingCancelled = onBookingCacelled
+            onBookingCancelled = onBookingCancelled
         )
     }
 }
@@ -152,8 +152,8 @@ private fun NavGraphBuilder.navigateAsPerState(
         BookedTokenDetailsScreenRoot(
             isHomeTab = isHomeTab,
             onBookingCancelled = {
-                viewModel.onEvent(event = HomeScreenEvent.OnBookingCancelled)
                 onBookingCancelled()
+                viewModel.onEvent(event = HomeScreenEvent.OnBookingCancelled)
             },
             onCheckedInAtStation = {
                 viewModel.onEvent(event = HomeScreenEvent.OnCheckedInAtStation)
@@ -168,8 +168,8 @@ private fun NavGraphBuilder.navigateAsPerState(
         TokenQrScreenRoot(
             isHomeTab = isHomeTab,
             onBookingCancelled = {
-                viewModel.onEvent(event = HomeScreenEvent.OnBookingCancelled)
                 onBookingCancelled()
+                viewModel.onEvent(event = HomeScreenEvent.OnBookingCancelled)
             },
             onSwapCompleted = {
                 viewModel.onEvent(event = HomeScreenEvent.OnSwapComplete(swapTime = it))
