@@ -1,6 +1,5 @@
 package com.yuma.oemsdk.navigation
 
-import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -14,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,7 +37,7 @@ object SilentAuthRoute
 object HomeScreenRoute
 
 @Composable
-internal fun SdkNavHost(modifier: Modifier,onExit: () -> Unit) {
+internal fun SdkNavHost(modifier: Modifier, onExit: () -> Unit) {
     val navController = rememberNavController()
 
     var onboardingStart by remember { mutableStateOf<Any>(SilentAuthRoute) }
@@ -101,7 +99,7 @@ internal fun SdkNavHost(modifier: Modifier,onExit: () -> Unit) {
         composable<HomeScreenRoute> {
             HomeScreenHost(
                 onUserLoggedOut = {
-                    onboardingStart = SilentAuthRoute
+                    onExit()
                 },
                 exitSdk = onExit
             )

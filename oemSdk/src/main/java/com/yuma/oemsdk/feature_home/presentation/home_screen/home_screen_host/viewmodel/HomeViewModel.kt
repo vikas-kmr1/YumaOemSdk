@@ -3,6 +3,7 @@ package com.yumaoem.feature_home.presentation.home_screen.home_screen_host.viewm
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.app_navigation_state.HomeScreenDestination
 import com.yumaoem.core.app_navigation_state.NavigationStateRepository
 import com.yumaoem.core.utils.orZero
@@ -108,6 +109,7 @@ internal class HomeViewModel(
             HomeScreenEvent.OnSwapSuccessShown -> {
                 yumaPrefUtil.logoutUser()
                 httpClientApi.resetKtorClients()
+                YumaSdk.onReset()
                 updateHomeScreenDestination(HomeScreenDestination.MapScreenPostSwap)
             }
 

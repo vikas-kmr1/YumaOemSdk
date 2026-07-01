@@ -43,6 +43,7 @@ android {
 
 dependencies {
     implementation(project(":oemSdk"))
+    implementation(files("libs/yuma-ble-sdk-v2.8.13.aar"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

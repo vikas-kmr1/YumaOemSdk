@@ -377,7 +377,7 @@ object YumaSdk {
     /** Returns the application context held by the SDK. */
     fun getApplicationContext(): Context = applicationContext
 
-    internal fun onDestroy() {
+    internal fun onReset() {
         soundPlayer.release()
         isInitialized = false
     }

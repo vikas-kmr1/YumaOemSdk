@@ -237,7 +237,6 @@ internal class SdkMainActivity : ComponentActivity(), CFCheckoutResponseCallback
 
     override fun onDestroy() {
         super.onDestroy()
-        YumaSdk.onDestroy()
         YumaSdk.andoridPaymentContextProvider.clearCurrentActivity()
     }
 

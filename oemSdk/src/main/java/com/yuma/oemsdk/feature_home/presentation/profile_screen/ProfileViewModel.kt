@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.yuma.oemsdk.YumaSdk
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core_network.impl.util.collect
@@ -81,6 +82,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             sendUserLogoutEvent()
             prefUtilApi.logoutUser()
+            YumaSdk.onReset()
             val userId: String? = prefUtilApi.getUserData()?.userId
             val refreshToken: String = prefUtilApi.getBearerTokens()?.refreshToken.orEmpty()
         }
