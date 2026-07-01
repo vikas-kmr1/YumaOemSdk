@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import com.yuma.oemsdk.YumaSdk
-import com.yumaoem.core.utils.app_utils.closeApp
 import com.yumaoem.core.utils.global_events.HideBottomBar
 import com.yumaoem.core.utils.global_events.ShowBottomBar
 import com.yumaoem.core.utils.global_events.bottom_bar_event.BottomBarEventController
@@ -36,15 +35,10 @@ import com.yumaoem.core_ui.theme.color.Colors
 import com.yumaoem.core_ui.theme.color.LocalColors
 import com.yumaoem.core_ui.theme.dimension.LocalDimensions
 import com.yumaoem.core_ui.utils.snackbar.ObserveAsEvents
-import com.yumaoem.corepreference.api.YumaPrefUtilApi
 import com.yumaoem.feature_home.presentation.home_screen.home_screen_host.home_navigation.HomeScreenRoot
 import com.yumaoem.feature_home.presentation.payments.navigation.PaymentFlowNavigation
 import com.yumaoem.feature_home.presentation.profile_screen.components.ProfileScreenRoot
 import com.yumaoem.feature_home.presentation.whatsapp_support.util.openWhatsAppWithMessage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalComposeUiApi::class)

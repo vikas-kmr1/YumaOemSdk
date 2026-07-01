@@ -16,6 +16,7 @@ import com.yumaoem.feature_home.domain.usecase.get_battery_details.GetBatteryDet
 import com.yumaoem.feature_home.domain.usecase.support_details.GetWhatsappSupprtDetailsUseCase
 import com.yumaoem.feature_home.domain.usecase.token_status.GetTokenStatusUseCase
 import com.yumaoem.feature_home.presentation.home_screen.maps_screen.user_current_location_provider.LocationProvider
+import com.yumaoem.feature_home.presentation.home_screen.token_booking_flow.check_in_screen.TokenDetailsScreenUiEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -190,6 +191,7 @@ class TokenQrScreenViewModel(
                     pollingJob?.cancel()
                     prefUtilApi.removeBookedTokenDetails()
                     _uiEvent.emit(TokenQRScreenUiEvent.OnBookingCancelled)
+                    prefUtilApi.logoutUser()
                 }
             )
         }

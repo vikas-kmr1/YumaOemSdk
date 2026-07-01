@@ -98,7 +98,10 @@ internal fun SdkNavHost(modifier: Modifier, onExit: () -> Unit) {
 
         composable<HomeScreenRoute> {
             HomeScreenHost(
-                onUserLoggedOut = onExit,
+                onUserLoggedOut = {
+                    YumaSdk.onReset()
+                    onExit()
+                },
                 exitSdk = onExit
             )
         }

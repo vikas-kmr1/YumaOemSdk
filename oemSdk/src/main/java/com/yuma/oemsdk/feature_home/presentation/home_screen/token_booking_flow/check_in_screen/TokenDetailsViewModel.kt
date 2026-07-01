@@ -127,8 +127,6 @@ class TokenDetailsViewModel(
                             sendCancelBookingEvent()
                             prefUtilApi.removeBookedTokenDetails()
                             prefUtilApi.logoutUser()
-                            httpClientApi.resetKtorClients()
-                            YumaSdk.onReset()
                             _uiEvent.emit(TokenDetailsScreenUiEvent.OnBookingCancelled)
                         },
                         onError = { errorMessage, _ ->

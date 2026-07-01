@@ -89,6 +89,7 @@ fun HomeScreenRoot(
         }
     }
 
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination.toString()
 

@@ -97,7 +97,6 @@ class ProfileViewModel(
                     }
                     sendUserLogoutEvent()
                     prefUtilApi.logoutUser()
-                    YumaSdk.onReset()
                     _uiEvent.send(ProfileScreenUiEvent.UserLoggedOut)
                 },
                 onError = { errorMessage, _ -> }
