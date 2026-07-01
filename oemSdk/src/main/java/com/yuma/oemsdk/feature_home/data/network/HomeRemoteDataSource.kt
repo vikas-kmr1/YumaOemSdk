@@ -55,6 +55,7 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -158,12 +159,14 @@ class HomeRemoteDataSource (
     }
 
     suspend fun getTokenStatus(
-        tokenId: Int
+        tokenId: Int,
+        clientSecret: String
     ) = getResult<TokenStatusResponseDTO> {
         val client = httpClientApi.getAuthenticatedHttpClient()
         client.get{
             url(Endpoints.TOKEN_STATUS)
             parameter("tokenId", tokenId)
+            header("Authorization", "Bearer $clientSecret")
         }
     }
 

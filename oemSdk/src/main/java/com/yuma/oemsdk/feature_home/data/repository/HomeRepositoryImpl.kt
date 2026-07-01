@@ -110,8 +110,9 @@ class HomeRepositoryImpl(
 
     override suspend fun getTokenStatus(
         tokenId: Int,
+        clientSecret: String
     ): Flow<RestClientResult<TokenStatus>> = getFlowResult {
-        homeRemoteDataSource.getTokenStatus(tokenId).mapFromDTO { dto ->
+        homeRemoteDataSource.getTokenStatus(tokenId, clientSecret).mapFromDTO { dto ->
             dto.toDomain()
         }
     }

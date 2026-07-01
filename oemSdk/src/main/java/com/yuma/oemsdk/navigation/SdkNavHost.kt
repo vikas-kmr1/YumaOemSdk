@@ -63,7 +63,7 @@ internal fun SdkNavHost(modifier: Modifier, onExit: () -> Unit) {
 
         composable<SilentAuthRoute> {
             val viewModel: SilentAuthViewModel = viewModel(
-                factory = YumaSdk.silentAuthViewModelFactory!!
+                factory = YumaSdk.silentAuthViewModelFactory
             )
             LaunchedEffect(viewModel) {
                 viewModel.uiEvent.collect { event ->
@@ -98,9 +98,7 @@ internal fun SdkNavHost(modifier: Modifier, onExit: () -> Unit) {
 
         composable<HomeScreenRoute> {
             HomeScreenHost(
-                onUserLoggedOut = {
-                    onExit()
-                },
+                onUserLoggedOut = onExit,
                 exitSdk = onExit
             )
         }

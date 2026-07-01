@@ -55,9 +55,12 @@ internal class HomeViewModel(
             navigationStateRepository.updateHomeDestination(destination)
         }
 
-        viewModelScope.launch {
-            delay(500)
-            getCustomerSupportData()
+        if (destination != HomeScreenDestination.SwapSuccessScreen &&
+            destination != HomeScreenDestination.MapScreenPostSwap) {
+            viewModelScope.launch {
+                delay(500)
+                getCustomerSupportData()
+            }
         }
     }
 

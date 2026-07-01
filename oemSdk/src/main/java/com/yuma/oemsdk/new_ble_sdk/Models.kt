@@ -13,13 +13,14 @@ data class CommonSessionConfig(
     val batteryType: Int, // 0 = gen-4, 1 = gen-5
     val swapType: Int = 1, // always 1
     val appVersion: String, // oem app version
-    val applicationSourceId: String = "20", // application id for oem 12 is for yulu
+    val applicationSourceId: String = "20",
     val currentLatitude: String,
     val currentLongitude: String,
     val clientCityId:Int,
     val clientVehicleId: Int,
     val isMultiYcuSwap: Boolean?,
     val partialCompletedCount: Int?,
+    val orderId: Int? = null ,
 )
 
 data class CommonBatteryPortBin(

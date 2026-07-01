@@ -3,6 +3,7 @@ package com.yumaoem.feature_home.presentation.diy_flow.diy_swap_in_progress
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.yuma.oemsdk.YumaSdk
 import com.yuma.oemsdk.onboarding.SilentAuthViewModel
 import com.yumacustomer.core_analytics.api.AnalyticsApi
 import com.yumacustomer.core_logger.api.LoggerApi
@@ -865,7 +866,7 @@ class DiySwapInProgressViewModel(
         viewModelScope.launch {
             delay(500)
             val tokenID = prefsApi.getBookedTokenDetails()?.tokenID?.toInt()
-            getTokenStatusUseCase.invoke(tokenID.orZero())
+            getTokenStatusUseCase.invoke(tokenID.orZero(), YumaSdk.getConfig().clientSecret)
                 .collect(
                     onLoading = {},
                     onSuccess = { tokenStatus ->

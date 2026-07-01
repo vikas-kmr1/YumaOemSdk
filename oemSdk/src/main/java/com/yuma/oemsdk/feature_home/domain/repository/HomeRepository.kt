@@ -67,7 +67,8 @@ interface HomeRepository {
     ):Flow<RestClientResult<CancelTokenResponse>>
 
     suspend fun getTokenStatus(
-        tokenId: Int
+        tokenId: Int,
+        clientSecret: String
     ):Flow<RestClientResult<TokenStatus>>
 
     suspend fun getDropOffScreen(

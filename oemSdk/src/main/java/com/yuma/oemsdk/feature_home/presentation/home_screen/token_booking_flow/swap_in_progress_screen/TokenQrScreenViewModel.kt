@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.yuma.oemsdk.YumaSdk
 import com.yumaoem.core.utils.orZero
 import com.yumaoem.core_network.impl.util.collect
 import com.yumaoem.corepreference.api.YumaPrefUtilApi
@@ -109,7 +110,7 @@ class TokenQrScreenViewModel(
             while (isActive) {
                 var shouldContinue = true
 
-                getTokenStatusUseCase.invoke(state.value.tokenId)
+                getTokenStatusUseCase.invoke(state.value.tokenId, YumaSdk.getConfig().clientSecret)
                     .collect(
                         onLoading = {},
                         onSuccess = { tokenStatus ->

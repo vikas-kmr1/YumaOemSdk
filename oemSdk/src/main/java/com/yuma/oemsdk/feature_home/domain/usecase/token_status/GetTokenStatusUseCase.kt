@@ -10,6 +10,7 @@ class GetTokenStatusUseCase (
     private val repository: HomeRepository
 ) {
     suspend operator fun invoke(
-        tokenId:Int
-    ): Flow<RestClientResult<TokenStatus>> = repository.getTokenStatus(tokenId)
+        tokenId:Int,
+        clientSecret: String
+    ): Flow<RestClientResult<TokenStatus>> = repository.getTokenStatus(tokenId, clientSecret)
 }

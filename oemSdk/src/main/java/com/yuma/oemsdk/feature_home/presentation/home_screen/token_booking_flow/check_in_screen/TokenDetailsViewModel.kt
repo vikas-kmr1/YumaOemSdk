@@ -8,13 +8,13 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.yuma.oemsdk.YumaSdk
 import com.yumacustomer.core_logger.api.LoggerApi
 import com.yumaoem.core.utils.app_utils.isAndroid12OrLower
 import com.yumaoem.core.utils.bluetooth.BluetoothController
 import com.yumaoem.core.utils.bluetooth.isBluetoothEnabled
 import com.yumaoem.core.utils.bluetooth.model.BluetoothDeviceDomain
 import com.yumaoem.core.utils.core_locaction_prodvider.CoreLocationProvider
-import com.yumaoem.core.utils.currentTimeMillis
 import com.yumaoem.core.utils.global_events.EnableBluetoothEvent
 import com.yumaoem.core.utils.global_events.controller.EventController
 import com.yumaoem.core.utils.orFalse
@@ -128,6 +128,7 @@ class TokenDetailsViewModel(
                             prefUtilApi.removeBookedTokenDetails()
                             prefUtilApi.logoutUser()
                             httpClientApi.resetKtorClients()
+                            YumaSdk.onReset()
                             _uiEvent.emit(TokenDetailsScreenUiEvent.OnBookingCancelled)
                         },
                         onError = { errorMessage, _ ->
@@ -142,11 +143,12 @@ class TokenDetailsViewModel(
 
 
             TokenDetailsScreenEvent.CheckInAtStationClicked -> {
-                if(isBluetoothEnabled()){
+                if (isBluetoothEnabled()) {
                     handleCheckInAtStation()
                 } else {
                     viewModelScope.launch {
-                        EventController.sendEvent(EnableBluetoothEvent(
+                        EventController.sendEvent(
+                            EnableBluetoothEvent(
                             onBluetoothEnabled = {
                                 handleCheckInAtStation()
                             }
@@ -185,7 +187,10 @@ class TokenDetailsViewModel(
             }
 
             TokenDetailsScreenEvent.OnBatteryVerification -> {
-                loggerApi.logDWithTag("Verification"," required - ${state.isBatteryVerificationRequired} , completed - ${state.batteryVerificationCompleted} ")
+                loggerApi.logDWithTag(
+                    "Verification",
+                    " required - ${state.isBatteryVerificationRequired} , completed - ${state.batteryVerificationCompleted} "
+                )
                 state = state.copy(
                     showBatteryVerificationScreen = true
                 )
@@ -402,9 +407,9 @@ class TokenDetailsViewModel(
                     state = state.copy(
                         isCheckInButtonLoading = false
                     )
-                    if (state.bookedTokenDetails?.isDiyToken.orFalse()){
+                    if (state.bookedTokenDetails?.isDiyToken.orFalse()) {
                         _uiEvent.emit(TokenDetailsScreenUiEvent.DiySwapStarted)
-                    }else{
+                    } else {
                         _uiEvent.emit(TokenDetailsScreenUiEvent.CheckedInAtStation)
                     }
                 },
@@ -456,7 +461,7 @@ class TokenDetailsViewModel(
 
     private fun onBatteryScanned(event: DiyScanBatteryIntent.OnScanCompleted) {
         if (state.isSubmitting.not()) {
-            validateAndStoreBatteryQr(event.scannedCode,event.isManualEntry)
+            validateAndStoreBatteryQr(event.scannedCode, event.isManualEntry)
         }
     }
 
@@ -469,16 +474,17 @@ class TokenDetailsViewModel(
 
         when {
             !isValid -> {
-                if(isYcuQrCode(batteryQr)){
+                if (isYcuQrCode(batteryQr)) {
                     state = state.copy(
                         dialogState = DialogState.ScanBattery
                     )
-                }else {
+                } else {
                     viewModelScope.launch {
                         _uiEvent.emit(TokenDetailsScreenUiEvent.ShowSnackbar("Invalid QR Code"))
                     }
                 }
             }
+
             alreadyExists -> {}
             else -> {
                 saveBatteryQr(batteryQr, isManualEntry)
@@ -521,14 +527,14 @@ class TokenDetailsViewModel(
                     state = state.copy(isSubmitting = true)
                 },
                 onSuccess = {
-                    if(it.data) {
+                    if (it.data) {
                         persistBatteryVerifiedFlag()
                         state = state.copy(
                             batteryVerificationCompleted = true,
                             showBatteryVerificationScreen = false
                         )
                         onEvent(TokenDetailsScreenEvent.CheckInAtStationClicked)
-                    }else{
+                    } else {
                         state = state.copy(
                             dialogState = DialogState.WrongBattery,
                         )
@@ -544,7 +550,6 @@ class TokenDetailsViewModel(
             )
         }
     }
-
 
 
     fun isYcuQrCode(code: String): Boolean {
@@ -571,12 +576,12 @@ class TokenDetailsViewModel(
     fun sendTokenScreenViewed() {
         viewModelScope.launch {
             val commonValues = commonAnalyticsParamsProvider.get()
-/*            analyticsApi.postEvent(
-                event = "screen_viewed",
-                values = commonValues + mapOf(
-                    "screen_name" to "Token_Details_Viewed"
-                )
-            )*/
+            /*            analyticsApi.postEvent(
+                            event = "screen_viewed",
+                            values = commonValues + mapOf(
+                                "screen_name" to "Token_Details_Viewed"
+                            )
+                        )*/
         }
     }
 
@@ -588,55 +593,56 @@ class TokenDetailsViewModel(
             val currentUser = prefUtilApi.getUserData()
             val tokenData = prefUtilApi.getBookedTokenDetails()
             val location = locationProvider.getCurrentLocation()
-/*            analyticsApi.postEvent(
-                event = "check_in_at_station",
-                values = mapOf(
-                    "user_id" to currentUser?.userId.orEmpty(),
-                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                    "mobile_number" to currentUser?.phone.orEmpty(),
-                    "timestamp" to currentTimeMillis(),
-                    "latitude" to location?.latitude.orZero(),
-                    "longitude" to location?.longitude.orZero(),
-                    "station_id" to tokenData?.bookingStation?.stationId.orZero(),
-                    "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
-                    "token_id" to tokenData?.tokenID.orEmpty(),
-                    "token_number" to tokenData?.tokenNumber.orEmpty(),
-                    "status" to status,
-                    "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
-                    "fleet_name" to currentUser?.bikeProvider.toString(),
-                    "is_diy" to tokenData?.isDiyToken.toString(),
-                )
-            )*/
+            /*            analyticsApi.postEvent(
+                            event = "check_in_at_station",
+                            values = mapOf(
+                                "user_id" to currentUser?.userId.orEmpty(),
+                                "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+                                "mobile_number" to currentUser?.phone.orEmpty(),
+                                "timestamp" to currentTimeMillis(),
+                                "latitude" to location?.latitude.orZero(),
+                                "longitude" to location?.longitude.orZero(),
+                                "station_id" to tokenData?.bookingStation?.stationId.orZero(),
+                                "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
+                                "token_id" to tokenData?.tokenID.orEmpty(),
+                                "token_number" to tokenData?.tokenNumber.orEmpty(),
+                                "status" to status,
+                                "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
+                                "fleet_name" to currentUser?.bikeProvider.toString(),
+                                "is_diy" to tokenData?.isDiyToken.toString(),
+                            )
+                        )*/
         }
     }
 
-    private fun sendCancelBookingEvent(){
+    private fun sendCancelBookingEvent() {
         viewModelScope.launch {
             val currentUser = prefUtilApi.getUserData()
             val tokenData = prefUtilApi.getBookedTokenDetails()
             val location = locationProvider.getCurrentLocation()
- /*           analyticsApi.postEvent(
-                event = "booking_cancelled",
-                values = mapOf(
-                    "user_id" to currentUser?.userId.orEmpty(),
-                    "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
-                    "mobile_number" to currentUser?.phone.orEmpty(),
-                    "timestamp" to currentTimeMillis(),
-                    "latitude" to location?.latitude.orZero(),
-                    "longitude" to location?.longitude.orZero(),
-                    "station_id" to tokenData?.bookingStation?.stationId.orZero(),
-                    "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
-                    "token_id" to tokenData?.tokenID.orEmpty(),
-                    "token_number" to tokenData?.tokenNumber.orEmpty(),
-                    "before_check_in" to true,
-                    "token_expired" to false,
-                    "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
-                    "fleet_name" to currentUser?.bikeProvider.toString(),
-                    "is_diy" to tokenData?.isDiyToken.toString(),
-                )
-            )*/
+            /*           analyticsApi.postEvent(
+                           event = "booking_cancelled",
+                           values = mapOf(
+                               "user_id" to currentUser?.userId.orEmpty(),
+                               "name" to "${currentUser?.firstName.orEmpty()} ${currentUser?.surname.orEmpty()}",
+                               "mobile_number" to currentUser?.phone.orEmpty(),
+                               "timestamp" to currentTimeMillis(),
+                               "latitude" to location?.latitude.orZero(),
+                               "longitude" to location?.longitude.orZero(),
+                               "station_id" to tokenData?.bookingStation?.stationId.orZero(),
+                               "station_name" to tokenData?.bookingStation?.stationName.orEmpty(),
+                               "token_id" to tokenData?.tokenID.orEmpty(),
+                               "token_number" to tokenData?.tokenNumber.orEmpty(),
+                               "before_check_in" to true,
+                               "token_expired" to false,
+                               "bike_qr_number" to tokenData?.clientVehicleQrCode.orEmpty(),
+                               "fleet_name" to currentUser?.bikeProvider.toString(),
+                               "is_diy" to tokenData?.isDiyToken.toString(),
+                           )
+                       )*/
         }
     }
+
     companion object {
         const val MAXIMUM_ALLOWED_CHECK_IN_DISTANCE_IN_METRES = 100
         const val MAX_ALLOWED_BEACON_SEARCH_RETRIES = 2

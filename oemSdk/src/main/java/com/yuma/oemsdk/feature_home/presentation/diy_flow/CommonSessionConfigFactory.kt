@@ -18,13 +18,14 @@ class CommonSessionConfigFactory(
         batteryCount: Int,
         batteryType: Int,
         isMultiSwapYcu: Boolean? = null,
-        partialCompletedCount: Int ?= null
+        partialCompletedCount: Int ?= null,
     ): CommonSessionConfig {
         val userData = prefUtil.getUserData()
         val location = locationManager.getCurrentLocation()
         val userId = userData?.userId
         val accessToken = prefUtil.getAccessToken()
         val clientCityId = userData?.clientCityId.orZero()
+        val orderId = prefUtil.getOrderId()
         val applicationSourceId = "16"
         val uuid = ""
         val swapType = 5
@@ -47,7 +48,8 @@ class CommonSessionConfigFactory(
             clientCityId = clientCityId,
             clientVehicleId = clientVehicleId,
             isMultiYcuSwap = isMultiSwapYcu,
-            partialCompletedCount = partialCompletedCount
+            partialCompletedCount = partialCompletedCount,
+            orderId = orderId,
         )
     }
 }

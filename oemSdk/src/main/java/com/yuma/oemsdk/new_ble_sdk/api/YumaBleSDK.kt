@@ -14,12 +14,13 @@ import com.yumacustomer.new_ble_sdk.data.SwapStatusResultDto
 import com.yumacustomer.new_ble_sdk.data.YumaResponse
 import com.yumacustomer.new_ble_sdk.data.YumaResponse.Error
 import com.yumacustomer.new_ble_sdk.data.YumaResponse.ResponseState
+import com.yumaoem.core.utils.context.PlatformContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 
-class YumaBleSDK constructor(appContext: Context, environment: String) {
-    val context = appContext
+class YumaBleSDK constructor(environment: String) {
+    val context = PlatformContext.getApplicationContext() as Context
     private var yumaSDK: OEMSDKComponent? = null
     private var isInitializedFlag = false
     private val sdkEnvironment: YumaSDKConfig.Environment = mapEnvironment(environment)
@@ -30,7 +31,7 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
 
     private fun mapEnvironment(env: String): YumaSDKConfig.Environment {
         return when (env.uppercase()) {
-            "DEV" -> YumaSDKConfig.Environment.DEV3
+            "DEV" -> YumaSDKConfig.Environment.DEV1
             "PREPROD", "PRE_PROD" -> YumaSDKConfig.Environment.PREPROD
             "PROD", "PRODUCTION" -> YumaSDKConfig.Environment.PROD
             else -> {
@@ -40,7 +41,7 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
         }
     }
 
-    suspend fun initialize(sessionConfig: CommonSessionConfig, enableAnalytics: Boolean) {
+   suspend fun initialize(sessionConfig: CommonSessionConfig, enableAnalytics: Boolean) {
         val sdkVersion = YumaSDK.getVersion()
         Log.d(TAG, "SDK Initialize :: sdkVersion: $sdkVersion, environment: $sdkEnvironment")
 
@@ -68,7 +69,8 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
             clientCityId = sessionConfig.clientCityId,
             clientVehicleId = sessionConfig.clientVehicleId,
             isMultiYcuSwap = sessionConfig.isMultiYcuSwap,
-            partialCompletedCount = sessionConfig.partialCompletedCount
+            partialCompletedCount = sessionConfig.partialCompletedCount,
+            orderId = sessionConfig.orderId
         )
 
         Log.d(TAG, "SDK.init()")
@@ -76,12 +78,12 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
         isInitializedFlag = true
     }
 
-    suspend fun startSwap(qrCode: String) {
+   suspend fun startSwap(qrCode: String) {
         Log.d(TAG, "SDK.startSwap()")
         yumaSDK?.startSwap(qrCode)
     }
 
-    suspend fun swapStatus(tokenId: Long): SwapStatusResultDto {
+   suspend fun swapStatus(tokenId: Long) : SwapStatusResultDto {
         Log.d(TAG, "SDK.swapStatus()")
         val swapStatusResult = yumaSDK?.swapStatus(tokenId)
         return SwapStatusResultDto(
@@ -92,23 +94,23 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
         )
     }
 
-    suspend fun submit() {
+   suspend fun submit() {
         Log.d(TAG, "SDK.submit()")
         yumaSDK?.submit()
     }
 
-    suspend fun clean() {
+   suspend fun clean() {
         Log.d(TAG, "SDK.clean()")
         yumaSDK?.clean()
         isInitializedFlag = false
     }
 
-    suspend fun triggerAccessType() {
+   suspend fun triggerAccessType() {
         Log.d(TAG, "SDK.setAccessType()")
         yumaSDK?.triggerAccessType()
     }
 
-    fun getResponseFlow(): Flow<YumaResponse> {
+   fun getResponseFlow(): Flow<YumaResponse> {
         if (yumaSDK == null) {
             Log.e(TAG, "yumaSDK is null, returning empty flow")
         }
@@ -117,9 +119,9 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
         } ?: emptyFlow()
     }
 
-    fun isInitialized(): Boolean = isInitializedFlag
+   fun isInitialized(): Boolean = isInitializedFlag
 
-    suspend fun smartSwapSubmit(): SmartSwapSubmitResponse {
+   suspend fun smartSwapSubmit() : SmartSwapSubmitResponse {
         Log.d(TAG, "SDK.smartSwapSubmit()")
         val smartSwapResult = yumaSDK?.smartSwapSubmit()
         Log.d(TAG, "SDK.smartSwapSubmit() result: $smartSwapResult")
@@ -199,7 +201,7 @@ class YumaBleSDK constructor(appContext: Context, environment: String) {
         }
     }
 
-    suspend fun submit(batteryQr: List<String>) {
+   suspend fun submit(batteryQr: List<String>) {
         Log.d(TAG, "SDK.manualSwapSubmit($batteryQr)")
         yumaSDK?.manualSwapSubmit(batteryQr)
     }
