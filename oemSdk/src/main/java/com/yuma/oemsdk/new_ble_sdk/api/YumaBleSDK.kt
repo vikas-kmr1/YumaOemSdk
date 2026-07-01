@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 
-class YumaBleSDK constructor(environment: String) {
-    val context = PlatformContext.getApplicationContext() as Context
+class YumaBleSDK constructor(appContext: Context, environment: String) {
+    val context = appContext
     private var yumaSDK: OEMSDKComponent? = null
     private var isInitializedFlag = false
     private val sdkEnvironment: YumaSDKConfig.Environment = mapEnvironment(environment)
